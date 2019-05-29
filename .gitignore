@@ -1,3 +1,19 @@
+# Project specific
+
+# Data directories, big files that are 
+# easily generated
+data/
+
+# Scratch space
+scratch/
+
+# Notebook initialization script
+notebooks/start_notebook.bash
+
+#############################################################
+
+## Default for Python
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
