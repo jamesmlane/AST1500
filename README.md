@@ -1,5 +1,3 @@
-# Sample Project
+# AST 1500
 
-This is a sample project
-
-## Sample subtitle
+AST 1500 project at the University of Toronto
