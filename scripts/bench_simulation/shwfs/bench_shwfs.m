@@ -7,8 +7,8 @@ close all % Clear all figures
 figDisp = 'yes'; % display all figures? (will slow down the computation)
 
 % Project-relative paths to OOMAO and helper function
-addpath(genpath('../../../matlab/functions'))
-addpath(genpath('../../../matlab/OOMAO'))
+addpath(genpath('../../../src/matlab/functions'))
+addpath(genpath('../../../src/matlab/OOMAO'))
 
 %% Atmospheric parameters
 r0 = 0.11; %in m, for a site like MMT @ 550 nm
@@ -121,14 +121,15 @@ wfs.INIT
 % A new frame read-out and slopes computing:
 +wfs;
 if strcmp(figDisp,'yes')
-    % The WFS camera display:
+    % Show the WFS camera:
     figure
     subplot(1,2,1)
     imagesc(wfs.camera)
-    % The WFS slopes display:
+    xlabel('pixel')
+    ylabel('pixel')
+    % Show the WFS slopes:
     subplot(1,2,2)
     slopesDisplay(wfs)
-
 end
 
 %% Do the calibration
