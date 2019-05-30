@@ -6,9 +6,11 @@
 %% Prepare
 clear all % Clears all variables
 close all % Clear all figures
-addpath(genpath('~/Software/Matlab/AO'))
-addpath(genpath('~/Software/Matlab/OOMAO')) % Add this folder to the current path
 figDisp = 'yes'; % display all figures? (will slow down the computation)
+
+% Project-relative paths to OOMAO and helper function
+addpath(genpath('~/Software/Matlab/functions'))
+addpath(genpath('~/Software/Matlab/OOMAO')) % Add this folder to the current path
 
 %% Atmospheric parameters
 r0 = 0.11; %in m, for a site like MMT @ 550 nm
