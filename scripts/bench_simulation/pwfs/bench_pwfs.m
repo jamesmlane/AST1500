@@ -1,6 +1,8 @@
 %% bench_pwfs.m
 % Closed loop simulation for the MMT AO system bench using the PWFS
 
+% Test addition
+
 %% Prepare
 clear all % Clears all variables
 close all % Clear all figures
