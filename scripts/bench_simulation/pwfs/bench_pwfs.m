@@ -9,8 +9,8 @@ close all % Clear all figures
 figDisp = 'yes'; % display all figures? (will slow down the computation)
 
 % Project-relative paths to OOMAO and helper function
-addpath(genpath('~/Software/Matlab/functions'))
-addpath(genpath('~/Software/Matlab/OOMAO')) % Add this folder to the current path
+addpath(genpath('../../../matlab/functions'))
+addpath(genpath('../../../matlab/OOMAO'))
 
 %% Atmospheric parameters
 r0 = 0.11; %in m, for a site like MMT @ 550 nm
@@ -24,7 +24,7 @@ atm = atmosphere(photometry.V,r0,30,...
 
 %% WFS parameters
 wfsType = 'sh'; %'sh' or 'py'
-modeType = 'zonal1'; % Modal basis correction - 'zonal2', 'zern', 'KL', 'DH'; 
+modeType = 'zonal1'; % Modal basis correction - 'zonal2', 'zern', 'KL', 'DH';
 % 'zonal1' should be computed for a SHWFS while 'zonal2' is for a PWFS
 mag = 10; %guidestar magnitude
 Band = 'R'; % guidestar band
@@ -32,24 +32,24 @@ dmType = 'reg'; %'ASM' or 'reg', where reg is a DM with square spacing
 coupling = 0.35; % deformable mirror actuator coupling
 readOutNoise = 2; % wfs detector readout noise
 
-% Setup the wavefront sensor with parameters depending on whether it's a 
+% Setup the wavefront sensor with parameters depending on whether it's a
 % Shack-Hartmann or a Pyramid
 switch wfsType
     case 'sh'
         nLenslet = 30;
         nL   = nLenslet;  % number of lenslets
         nPx  = 15;        % number of pixels per lenslet
-        nRes = nL*nPx;    % resolution on the pupil plane (no of pixels), 
+        nRes = nL*nPx;    % resolution on the pupil plane (no of pixels),
         % make sure atleast nyquist sampled for r0 (so at least ~140 pix)
-        quadCell = 'false';     % using a quadcell at fainter magnitudes helps 
+        quadCell = 'false';     % using a quadcell at fainter magnitudes helps
         % the SHWFS (quadcell is 4x4 pixels per SHWFS subaperture)
         modulation = 'NA';      % units of lambda/d
         wfs = shackHartmann(nL,nRes,0.05); %set the minimum ratio of light
         % intensity between a partially and fully illuminated lenslet 0.05
         % works good at the faint end (mag = 14), also matches the PWFS.
-        % Which partially illuminated pixels are you going to try and 
+        % Which partially illuminated pixels are you going to try and
         % use information from?
-        
+
         % Set whether or not quadcell
         if strcmp(quadCell,'true')
             wfs.camera.resolution = nLenslet*[2 2];
@@ -58,26 +58,26 @@ switch wfsType
         % Closed loop integrator gain:
         loopGain = 0.30; %0.35 works slightly better at bright end but
         % doesnt not work so well at the faint end
-        % Want to account for the noise in the measurement. You don't 
-        % always want to make the 'maximal' correction, because you'll 
+        % Want to account for the noise in the measurement. You don't
+        % always want to make the 'maximal' correction, because you'll
         % just end up chasing noise.
-        
+
         tic %time the simulation
-      
+
     case 'py'
         nLenslet = 24;
         nL   = nLenslet;        % number of lenslets across the aperture
         nPx  = 6;               % number of pixels per lenslet
         nRes = nL*nPx;          % resolution on the pupil plane (no of pixels)
-        
+
         modulation = 2;         %units of lambda/d
-        
+
         wfs = pyramid(nLenslet,nRes,'modulation',modTmp,'obstructionRatio',0.10,'minLightRatio',0.05); % increase modulation to avoid loss of performance due to small linear range
         % Closed loop integrator gain:
         loopGain = 0.5; %generally larger than the SHWFS gain
-        
+
         tic
-        
+
 end
 
 %% General parameters
@@ -89,7 +89,7 @@ obstructionRatio = 0.0;    % central obscuration ratio
 fieldOfViewInArcsec = 90;   % fieldOfViewInArcsec
 
 % Makes a telescope. Required argument is diameter, others are optional
-% Should reduce nRes so we don't oversample 
+% Should reduce nRes so we don't oversample
 tel = telescope(D,'resolution',nRes,...
     'obstructionRatio',obstructionRatio,...
     'fieldOfViewInArcsec',fieldOfViewInArcsec,...
@@ -130,13 +130,13 @@ if strcmp(figDisp,'yes')
     % The WFS slopes display:
     subplot(1,2,2)
     slopesDisplay(wfs)
-    
+
 end
 
 %% Do the calibration
 switch dmType
     case 'ASM'
-        
+
         % USE ASM
         load MMT_DM336_Actuators.mat
         nAct = length(ACT);
@@ -145,23 +145,23 @@ switch dmType
         dmPitch = 6.5/21;
         px = ACT(:,1)*3.25;
         py = ACT(:,2)*3.25;
-        % Poke an actuator and measure the true phase offset. What does this 
+        % Poke an actuator and measure the true phase offset. What does this
         % Look like??
         bif = gaussianInfluenceFunction(coupling);
         bif.actuatorCoord = (px/dmPitch +1j*py/dmPitch);
         dm = deformableMirror(nAct,'modes',bif,'resolution',tel.resolution,...
             'validActuator',true(1,nAct));
-        
+
         if strcmp(figDisp,'yes')
-            
+
             figure(88);
             scatter(px,py)
             title('DM actuator locations')
             axis tight square
             box on
-            
+
         end
-        
+
     case 'reg'
         bif = influenceFunction('monotonic',coupling);
         % nAct = nLenslet + 1;
@@ -177,19 +177,19 @@ end
 %% Interaction matrix: DM/WFS calibration
 ngs=ngs.*tel;
 stroke = ngs.wavelength/40; %total strength of actuator calibration 'poke'
-% This poke is just for calibration. This is because the response 
+% This poke is just for calibration. This is because the response
 % is linear so you don't have to poke much.
 
-% The choice of mode is how you do your calibration. Do it in terms of 
+% The choice of mode is how you do your calibration. Do it in terms of
 % polynomials (zernike, disk harmonics, etc..), or just poke actuators
 switch modeType
     case {'zern','DH','KL','zonal2'}
-        
+
         %create vector matrix for each mode, scaled by stroke
         radOrd = 25; %set by trying to match at least as many modes as
         %actuators (i.e. degrees of freedom); 25 radial orders of zernikes
         %slightly oversample the number of actuators on the MMT ASM
-        
+
         j=1;
         kk=0;
         dhRadOrdVec = [];
@@ -200,18 +200,18 @@ switch modeType
             end
             kk = kk+1;
         end
-        
+
         modeVec = 2:j-1; %exclude piston
         dhRadOrdVec(1) = [];
         zern = zernike(modeVec,'resolution',nRes,'pupil',logical(tel.pupil));
         zernMatrix = pinv(zern.modes)*full(bif.modes);
-        
+
         %% Divide by 1/radial order
         %apparently this is what JP and LAM people do if zernike modes are
         %pushing the PWFS signals beyond the linear regime. I don't think
         %this is an issue for us because we consider a noiseless scenario
         %and so we can use small amplitude 'pokes' or 'shapes'
-        
+
         % zern.c = zern.c./(zern.n');
         % for jj = 1:length(zern.c)
         %    zern.modes(:,jj) = zern.modes(:,jj)*zern.c(jj);
@@ -239,7 +239,7 @@ switch modeType
                 modeVec = 1:nAct;
                 nThresholded = 1;
         end
-        
+
         interactionMatrix = zeros(size(wfs.slopes,1),length(modeVec));
         for jj = 1:length(modeVec)
             dm.coefs = stroke*zernMatrix(jj,:)';
@@ -248,48 +248,48 @@ switch modeType
         end
         commandMatrix = pinv(interactionMatrix);
         dmCalib.M = commandMatrix;
-        
+
         [U,S,V] = svd(interactionMatrix);
         eigenValues = diag(S);
-        
+
         iS = diag(1./eigenValues(1:end-nThresholded));
         [nS,nC] = size(interactionMatrix);
         iS(nC,nS) = 0;
-        
+
         % and then the command matrix is derived.
         commandMatrix = V*iS*U';
         dmCalib.M = commandMatrix;
         dmCalib.nThresholded = nThresholded;
-        
+
     case 'zonal1'
-        
+
         ngs=ngs.*tel;
         % ?? Where does calibration come from. Comes from OOMAO. This is
-        % an object that will help us make our command matrix. Here it 
+        % an object that will help us make our command matrix. Here it
         % pokes the DM and measures the phase changes
         dmCalib = calibration(dm,wfs,ngs,stroke);
         nThresholded = 1;
         dmCalib.nThresholded = nThresholded;
         % OOMAO is doing the inverse for us here.
         commandMatrix = dmCalib.M;
-        
+
 end
 
-% At this point we've made our command / interaction matrices and 
+% At this point we've made our command / interaction matrices and
 % We've defined all the aspects of our telescope.
 
 %% The closed loop
 % Combining the atmosphere and the telescope
 tel = tel+atm;
 if strcmp(figDisp,'yes')
-    
+
     figure(10)
     imagesc(tel)
 end
 %%
-% Resetting the DM command. You want the DM coefficients to remember their 
-% position while inside the loop, because you are applying corrections to the 
-% current state of the optical system, which is set by the current shape of 
+% Resetting the DM command. You want the DM coefficients to remember their
+% position while inside the loop, because you are applying corrections to the
+% current state of the optical system, which is set by the current shape of
 % the DM. But to begin have it flat.
 dm.coefs = 0;
 %%
@@ -310,7 +310,7 @@ nIteration = exposureTime + startDelay;
 %%
 % Display of turbulence and residual phase
 if strcmp(figDisp,'yes')
-    
+
     figure(11)
     h = imagesc([turbPhase,ngs.meanRmPhase]);
     axis equal tight
@@ -330,7 +330,7 @@ atm.wavelength = photometry.V;
 % Phase variance to micron rms converter
 rmsMicron = @(x) 1e6*sqrt(x).*ngs.wavelength/2/pi;
 if strcmp(figDisp,'yes')
-    
+
     %% Where is the actual plotting call??
     (12)
     %plot(u,rmsMicron(total),u([1,end]),rmsMicron(totalTheory)*ones(1,2),u,rmsMicron(residue))
@@ -389,7 +389,7 @@ ngs = ngs.*tel*wfs;
 %%
 % and display the subaperture intensity
 if strcmp(figDisp,'yes')
-    
+
     figure
     intensityDisplay(wfs)
 end
@@ -416,48 +416,48 @@ for kIteration=1:nIteration
     % Propagation throught the atmosphere to the telescope, +tel means that
     % all the layers move of one step based on the sampling time and the
     % wind vectors of the layers
-    % Having the + here advances the atmosphere by one step and then 
+    % Having the + here advances the atmosphere by one step and then
     % updates the NGS from start
     ngs=ngs.*+tel;
     +science;
-    
+
     % Saving the turbulence aberrated phase
     turbPhase = ngs.meanRmPhase;
     % Variance of the atmospheric wavefront
     total(kIteration) = var(ngs);
-    % Propagation to the WFS. Here the WFS is updated so it has current 
+    % Propagation to the WFS. Here the WFS is updated so it has current
     % slopes
     ngs=ngs*dm*wfs;
-    
+
     if kIteration == 1
         turbPhaseInit = turbPhase;
     end
-    
+
     % Variance of the residual wavefront
     residue(kIteration) = var(ngs);
-    % Computing the DM residual coefficients. Apply the correction using 
+    % Computing the DM residual coefficients. Apply the correction using
     % the command matrix, to get residuals, the updating commands.
     residualDmCoefs = commandMatrix*wfs.slopes;
     % Integrating the DM coefficients
-    
+
     switch modeType
         case {'zonal1','zonal2'}
             % Negative because correction.
             dm.coefs = dm.coefs - loopGain*residualDmCoefs;
         otherwise
             dm.coefs = dm.coefs - (loopGain*((residualDmCoefs')*zernMatrix))';
-            
+
     end
-    
-    
+
+
     if strcmp(figDisp,'yes')
-        
+
         % Display of turbulence and residual phase
         set(h,'Cdata',[turbPhase,ngs.meanRmPhase])
         drawnow
     end
-    
-    
+
+
 end
 % First simulate the bench with a SH
 % Then simulate the bench with a Pyramid
@@ -469,17 +469,17 @@ end
 %%
 % Updating the display
 if strcmp(figDisp,'yes')
-    
+
     figure(12)
     text(0.5,1,['SR (Marechal approx):' num2str(marechalStrehl_lsq_theoretical) '%'])
     text(0.5,0.8,['Empirical (Marechal approx):' num2str(...
         100*exp(-(mean(rmsMicron(residue(50:end)))*1e-6/ngs.wavelength*2*pi)^2*(atm.wavelength/science(1).wavelength)^2)) '%'])
-    
+
     set(0,'CurrentFigure',12)
     hold on
     plot(u,rmsMicron(total),'b--',u,rmsMicron(residue),'r--')
     legend('Full','Full (theory)','Residue','Full (noise)','Residue (noise)','Location','Best')
-    
+
 end
 
 
