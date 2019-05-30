@@ -1,6 +1,6 @@
 # Project specific
 
-# Data directories, big files that are 
+# Data directories, big files that are
 # easily generated
 data/
 
@@ -9,6 +9,9 @@ scratch/
 
 # Notebook initialization script
 notebooks/start_notebook.bash
+
+# .DS_store causes problems when using multiple OS X machines
+.DS_Store
 
 #############################################################
 
@@ -118,4 +121,3 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-.DS_Store
