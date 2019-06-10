@@ -9,8 +9,8 @@ close all % Clear all figures
 figDisp = 'yes'; % display all figures? (will slow down the computation)
 
 % Project-relative paths to OOMAO and helper function
-addpath(genpath('../../../matlab/functions'))
-addpath(genpath('../../../matlab/OOMAO'))
+addpath(genpath('../../../src/matlab/functions'))
+addpath(genpath('../../../src/matlab/OOMAO_Masen'))
 
 %% Atmospheric parameters
 
@@ -30,7 +30,7 @@ modeType = 'zonal2'; % Modal basis correction - 'zonal2', 'zern', 'KL', 'DH';
 % 'zonal1' should be computed for a SHWFS while 'zonal2' is for a PWFS
 mag = 10; %guidestar magnitude
 Band = 'R'; % guidestar band
-dmType = 'reg'; %'ASM' or 'reg', where reg is a DM with square spacing
+dmType = 'ASM'; %'ASM' or 'reg', where reg is a DM with square spacing
 coupling = 0.35; % deformable mirror actuator coupling
 readOutNoise = 2; % wfs detector readout noise
 
@@ -106,7 +106,7 @@ switch dmType
     case 'ASM'
 
         % USE ASM
-        load MMT_DM336_Actuators.mat
+        load ../../../data/MMT_DM336_Actuators.mat
         nAct = length(ACT);
         actCentrePos(:,1) = ACT(:,1);
         actCentrePos(:,2) = ACT(:,2);
@@ -209,6 +209,7 @@ switch modeType
 
         interactionMatrix = zeros(size(wfs.slopes,1),length(modeVec));
         for jj = 1:length(modeVec)
+            
             dm.coefs = stroke*zernMatrix(jj,:)';
             ngs=ngs.*tel*dm*wfs;
             interactionMatrix(:,jj) = wfs.slopes./stroke;
@@ -391,8 +392,8 @@ tel = tel + atm;
 
 %% number of instances over which the Strehl is computed
 
-total  = zeros(1,nIteration);
-residue = zeros(1,nIteration);
+totalVar  = zeros(1,nIteration);
+residueVar = zeros(1,nIteration);
 dm.coefs = 0;
 
 %% Run the loop
@@ -409,7 +410,7 @@ for kIteration=1:nIteration
     % Saving the turbulence aberrated phase
     turbPhase = ngs.meanRmPhase;
     % Variance of the atmospheric wavefront
-    total(kIteration) = var(ngs);
+    totalVar(kIteration) = var(ngs);
     % Propagation to the WFS. Here the WFS is updated so it has current
     % slopes
     ngs=ngs*dm*wfs;
@@ -419,7 +420,7 @@ for kIteration=1:nIteration
     end
 
     % Variance of the residual wavefront
-    residue(kIteration) = var(ngs);
+    residueVar(kIteration) = var(ngs);
     % Computing the DM residual coefficients. Apply the correction using
     % the command matrix, to get residuals, the updating commands.
     residualDmCoefs = commandMatrix*wfs.slopes;
@@ -459,14 +460,12 @@ if strcmp(figDisp,'yes')
 
     figure(12)
     text(0.5,1,['SR (Marechal approx):' num2str(marechalStrehl_lsq_theoretical) '%'])
-    text(0.5,0.8,['Empirical (Marechal approx):' num2str(...
-        100*exp(-(mean(rmsMicron(residue(50:end)))*1e-6/ngs.wavelength*2*pi)^2*(atm.wavelength/science(1).wavelength)^2)) '%'])
+    text(0.5,0.8,['Empirical (Marechal approx):' num2str(100*exp(-(mean(rmsMicron(residueVar(50:nIteration)))*1e-6/ngs.wavelength*2*pi)^2*(atm.wavelength/science(1).wavelength)^2)) '%'])
 
     set(0,'CurrentFigure',12)
     hold on
-    plot(u,rmsMicron(total),'b--',u,rmsMicron(residue),'r--')
+    plot(u,rmsMicron(totalVar),'b--',u,rmsMicron(residueVar),'r--')
     legend('Full','Full (theory)','Residue','Full (noise)','Residue (noise)','Location','Best')
-
 end
 
 
