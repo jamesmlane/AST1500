@@ -1,9 +1,9 @@
 %% bench_pwfs.m
+
 % Closed loop simulation for the MMT AO system bench using the PWFS
 
-% Test addition. Second test addition
-
 %% Prepare
+
 clear all % Clears all variables
 close all % Clear all figures
 figDisp = 'yes'; % display all figures? (will slow down the computation)
@@ -13,18 +13,20 @@ addpath(genpath('../../../matlab/functions'))
 addpath(genpath('../../../matlab/OOMAO'))
 
 %% Atmospheric parameters
+
 r0 = 0.11; %in m, for a site like MMT @ 550 nm
 
 % Atmosphere object. In V-band, with Fried parameter of r0, with L0 30 meters.
-% With 3 layers with the noted parameters
+% Just one single layer for the test bench
 atm = atmosphere(photometry.V,r0,30,...
     'altitude',0,...
     'windSpeed',5,...
     'windDirection',0);
 
 %% WFS parameters
-wfsType = 'sh'; %'sh' or 'py'
-modeType = 'zonal1'; % Modal basis correction - 'zonal2', 'zern', 'KL', 'DH';
+
+wfsType = 'py'; %'sh' or 'py'
+modeType = 'zonal2'; % Modal basis correction - 'zonal2', 'zern', 'KL', 'DH';
 % 'zonal1' should be computed for a SHWFS while 'zonal2' is for a PWFS
 mag = 10; %guidestar magnitude
 Band = 'R'; % guidestar band
@@ -32,64 +34,30 @@ dmType = 'reg'; %'ASM' or 'reg', where reg is a DM with square spacing
 coupling = 0.35; % deformable mirror actuator coupling
 readOutNoise = 2; % wfs detector readout noise
 
-% Setup the wavefront sensor with parameters depending on whether it's a
-% Shack-Hartmann or a Pyramid
-switch wfsType
-    case 'sh'
-        nLenslet = 30;
-        nL   = nLenslet;  % number of lenslets
-        nPx  = 15;        % number of pixels per lenslet
-        nRes = nL*nPx;    % resolution on the pupil plane (no of pixels),
-        % make sure atleast nyquist sampled for r0 (so at least ~140 pix)
-        quadCell = 'false';     % using a quadcell at fainter magnitudes helps
-        % the SHWFS (quadcell is 4x4 pixels per SHWFS subaperture)
-        modulation = 'NA';      % units of lambda/d
-        wfs = shackHartmann(nL,nRes,0.05); %set the minimum ratio of light
-        % intensity between a partially and fully illuminated lenslet 0.05
-        % works good at the faint end (mag = 14), also matches the PWFS.
-        % Which partially illuminated pixels are you going to try and
-        % use information from?
+%% Set up the PWFS
 
-        % Set whether or not quadcell
-        if strcmp(quadCell,'true')
-            wfs.camera.resolution = nLenslet*[2 2];
-            wfs.quadCell = true;
-        end
-        % Closed loop integrator gain:
-        loopGain = 0.30; %0.35 works slightly better at bright end but
-        % doesnt not work so well at the faint end
-        % Want to account for the noise in the measurement. You don't
-        % always want to make the 'maximal' correction, because you'll
-        % just end up chasing noise.
+nLenslet = 24;
+nL   = nLenslet;    % number of lenslets across the aperture (one dimension)
+nPx  = 6;           % number of pixels per lenslet
+nRes = nL*nPx;      % resolution on the pupil plane (no of pixels)
+modulation = 2;     % units of lambda/d
+loopGain = 0.5;     % Closed loop integrator gain: generally larger than SHWFS
 
-        tic %time the simulation
-
-    case 'py'
-        nLenslet = 24;
-        nL   = nLenslet;        % number of lenslets across the aperture
-        nPx  = 6;               % number of pixels per lenslet
-        nRes = nL*nPx;          % resolution on the pupil plane (no of pixels)
-
-        modulation = 2;         %units of lambda/d
-
-        wfs = pyramid(nLenslet,nRes,'modulation',modTmp,'obstructionRatio',0.10,'minLightRatio',0.05); % increase modulation to avoid loss of performance due to small linear range
-        % Closed loop integrator gain:
-        loopGain = 0.5; %generally larger than the SHWFS gain
-
-        tic
-
-end
+% Make the PWFS.
+% nLenslet is the equivalent size of a SHWFS
+% nRes is the number of pixels across the wavefront sensor aperture
+% increase modulation to avoid loss of performance due to small linear range
+wfs = pyramid(nLenslet,nRes,'modulation',modulation);
 
 %% General parameters
 
-D    = 6.5;               % telescope primary mirror diameter
-d    = D/nL;                % lenslet pitch
+D    = 6.5;                % telescope primary mirror diameter
+d    = D/nL;               % lenslet pitch
 samplingFreq = 100;        % WFS sampling time
-obstructionRatio = 0.0;    % central obscuration ratio
-fieldOfViewInArcsec = 90;   % fieldOfViewInArcsec
+obstructionRatio = 0.0;    % central obscuration ratio of the secondary
+fieldOfViewInArcsec = 90;  % field of view in arcseconds
 
-% Makes a telescope. Required argument is diameter, others are optional
-% Should reduce nRes so we don't oversample
+% Makes a telescope. Should reduce nRes so we don't oversample?
 tel = telescope(D,'resolution',nRes,...
     'obstructionRatio',obstructionRatio,...
     'fieldOfViewInArcsec',fieldOfViewInArcsec,...
@@ -108,17 +76,17 @@ else
     ngs = source('wavelength',photometry.J);
 end
 
-% And for later use is a science object in k band is instantiated (mainly
+% And for later use is a science object in K band is instantiated (mainly
 % for the strehl computation
 science = source('wavelength',photometry.K);
 
 % Propagation of the calibration source to the WFS through the telescope
 ngs = ngs.*tel*wfs;
 
-% This 'initializes' or 'starts' a bunch of parameters of the WFS
+% Initialize the WFS, set the reference slopes
 wfs.INIT
 
-%%Show the WFS
+%% Show the WFS
 
 % A new frame read-out and slopes computing:
 +wfs;
@@ -130,10 +98,10 @@ if strcmp(figDisp,'yes')
     % The WFS slopes display:
     subplot(1,2,2)
     slopesDisplay(wfs)
-
 end
 
 %% Do the calibration
+
 switch dmType
     case 'ASM'
 
@@ -171,10 +139,10 @@ switch dmType
             'resolution',tel.resolution);
 end
 
+%% Interaction matrix: DM/WFS calibration
+
 % Now we've defined all of our components. We want to develop a
 % relationship between DM commands and phase changes
-
-%% Interaction matrix: DM/WFS calibration
 ngs=ngs.*tel;
 stroke = ngs.wavelength/40; %total strength of actuator calibration 'poke'
 % This poke is just for calibration. This is because the response
@@ -189,7 +157,6 @@ switch modeType
         radOrd = 25; %set by trying to match at least as many modes as
         %actuators (i.e. degrees of freedom); 25 radial orders of zernikes
         %slightly oversample the number of actuators on the MMT ASM
-
         j=1;
         kk=0;
         dhRadOrdVec = [];
@@ -206,11 +173,11 @@ switch modeType
         zern = zernike(modeVec,'resolution',nRes,'pupil',logical(tel.pupil));
         zernMatrix = pinv(zern.modes)*full(bif.modes);
 
-        %% Divide by 1/radial order
-        %apparently this is what JP and LAM people do if zernike modes are
-        %pushing the PWFS signals beyond the linear regime. I don't think
-        %this is an issue for us because we consider a noiseless scenario
-        %and so we can use small amplitude 'pokes' or 'shapes'
+        % Divide by 1/radial order
+        % apparently this is what JP and LAM people do if zernike modes are
+        % pushing the PWFS signals beyond the linear regime. I don't think
+        % this is an issue for us because we consider a noiseless scenario
+        % and so we can use small amplitude 'pokes' or 'shapes'
 
         % zern.c = zern.c./(zern.n');
         % for jj = 1:length(zern.c)
@@ -278,37 +245,40 @@ end
 % At this point we've made our command / interaction matrices and
 % We've defined all the aspects of our telescope.
 
-%% The closed loop
-% Combining the atmosphere and the telescope
-tel = tel+atm;
-if strcmp(figDisp,'yes')
+%% Combine the telescope and atmosphere
 
+tel = tel+atm;
+% Show the telescope and atmosphere
+if strcmp(figDisp,'yes')
     figure(10)
     imagesc(tel)
 end
-%%
+
+%% Prepare to close the loop
+
 % Resetting the DM command. You want the DM coefficients to remember their
 % position while inside the loop, because you are applying corrections to the
 % current state of the optical system, which is set by the current shape of
 % the DM. But to begin have it flat.
 dm.coefs = 0;
-%%
+
 % Propagation throught the atmosphere to the telescope
 ngs=ngs.*tel;
-%%
+
 % Saving the turbulence aberrated phase
 turbPhase = ngs.meanRmPhase;
-%%
+
 % Propagation to the WFS
 ngs=ngs*dm*wfs;
 
 %% Definition of niteration
+
 startDelay = 30;
 exposureTime = 60;
 nIteration = exposureTime + startDelay;
 
-%%
-% Display of turbulence and residual phase
+%% Display turbulence and residual phase
+
 if strcmp(figDisp,'yes')
 
     figure(11)
@@ -318,20 +288,22 @@ if strcmp(figDisp,'yes')
     snapnow
 end
 
-% Indexe times for images probably
+% Index times for images
 u = (0:nIteration-1).*tel.samplingTime;
-% Probably a natural guide star?
+% set the wavelength of the atmosphere to agree with the guide star
 atm.wavelength = ngs.wavelength;
-%%
+
 % Piston removed phase variance
 totalTheory = phaseStats.zernikeResidualVariance(1,atm,tel);
 atm.wavelength = photometry.V;
-%%
+
+%% Calculate phase variance in microns and plot
+
 % Phase variance to micron rms converter
 rmsMicron = @(x) 1e6*sqrt(x).*ngs.wavelength/2/pi;
 if strcmp(figDisp,'yes')
 
-    %% Where is the actual plotting call??
+    % Where is the actual plotting call??
     (12)
     %plot(u,rmsMicron(total),u([1,end]),rmsMicron(totalTheory)*ones(1,2),u,rmsMicron(residue))
     grid
@@ -341,36 +313,39 @@ if strcmp(figDisp,'yes')
 end
 
 %% THEORETICAL PERFORMANCE ANALYSIS - CASE OF THE SINGLE INTEGRATOR LOOP WITH GAIN
+
 varFit      = 0.23*(d/atm.r0)^(5/3)*(atm.wavelength/science(1).wavelength)^2;
 varAlias    = 0.07*(d/atm.r0)^(5/3)*(atm.wavelength/science(1).wavelength)^2;
 varTempo    = phaseStats.closedLoopVariance(atm, tel.samplingTime,0*tel.samplingTime,loopGain)*(atm.wavelength/science(1).wavelength)^2;
 marechalStrehl_lsq_theoretical = 100*exp(-varFit-varAlias-varTempo);
 
 %% WFS noise
+
 magTmp = mag;
 ngs.magnitude = magTmp;
-ngsTmp = source('wavelength',photometry.R); %normalize photons to R-band
+ngsTmp = source('wavelength',photometry.R); % Use temporary ngs object to
+                                            % normalize photons to R-band
 ngsTmp.magnitude = magTmp;
 ngs.nPhoton = ngsTmp.nPhoton;
 
 %%
+
 % It can be useful to know the number of photon per subaperture. To do so,
 % let separate the atmosphere from the telescope
 tel = tel - atm;
 
 %% SCIENCE CAMERA
+
 cam = imager(); % default: 8 pixels across the PSF FWHM at the imaging wavelegth (=4xNyquist)
 science = science.*tel*cam;
 cam.referenceFrame = cam.frame;
 %cam = imager('nyquistSampling',2,'fieldStopSize',1/4*nPx);
-
-%% What does a stray + do ??
-+science;
++science; % Take a single frame of the science target
 
 %% LOOP INIT
 
-flush(cam)
-cam.frame = cam.frame*0;
+flush(cam) % clear the camera buffer
+cam.frame = cam.frame*0; % Reset camera pixels
 cam.clockRate    = 1;
 cam.exposureTime = exposureTime;
 
@@ -379,38 +354,48 @@ set(science,'logging',true)
 set(science,'phaseVar',[])
 
 %% set the science path
-% Science goes te
+
 science = science.*tel*dm*cam;
+
 %%
-% re-propagate the source,
+
+% re-propagate the NGS,
 % I think here you reset all the properties of the system but keep the DM
 % calibrated so you can just go.
 ngs = ngs.*tel*wfs;
-%%
-% and display the subaperture intensity
-if strcmp(figDisp,'yes')
 
+%% display the subaperture intensity
+if strcmp(figDisp,'yes')
     figure
     intensityDisplay(wfs)
 end
+
 %%
+
 % Now the readout noise in photo-electron per pixel per frame rms is set
 wfs.camera.readOutNoise = readOutNoise; %in electrons
+
 %%
+
 % Photon-noise is enabled.
 wfs.camera.photonNoise = true;
+
 %%
+
 % A pixel threshold is defined. JL doesn't worry
 wfs.framePixelThreshold = wfs.camera.readOutNoise;
 
-
 figure; imagesc(wfs.camera.frame);
-%% number of instances over which the Strehl is computed
+
 tel = tel + atm;
+
+%% number of instances over which the Strehl is computed
 
 total  = zeros(1,nIteration);
 residue = zeros(1,nIteration);
 dm.coefs = 0;
+
+%% Run the loop
 
 for kIteration=1:nIteration
     % Propagation throught the atmosphere to the telescope, +tel means that
@@ -459,6 +444,7 @@ for kIteration=1:nIteration
 
 
 end
+
 % First simulate the bench with a SH
 % Then simulate the bench with a Pyramid
 % Want to show a corrected PSF on the bench. Compare bench Strehl with
@@ -467,6 +453,7 @@ end
 % Could you have a band pass which is too wide
 
 %%
+
 % Updating the display
 if strcmp(figDisp,'yes')
 
@@ -484,9 +471,11 @@ end
 
 
 %% Science camera
+
 cam.strehl
 
 %% Images generated from theory
+
 pupil = logical(turbPhase);
 sampling = 4; %pix/fwhm
 
@@ -496,7 +485,6 @@ phase = zeros(size(turbPhase));
 wave = pupil.*exp(1i*phase);
 H = pupil.*exp(1i*phase).*wave/sqrt(sum(pupil(:).^2));
 n = round((length(H)*sampling/10)*10);
-%% ?? There's an error here
 HFft = fft2_centre(H,1,n,n);
 psf_perf = abs(HFft).^2;
 psf_perf = rescale(psf_perf);
