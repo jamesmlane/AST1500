@@ -1,4 +1,4 @@
-# BP name, BP center (m), BP width (m), nPhotons
+# BP name, BP center, BP width, nPhotons
 U,   0.360e-6, 0.070e-6, 2.0e12
 B,   0.440e-6, 0.100e-6, 5.4e12
 V0,  0.500e-6, 0.090e-6, 3.3e12
