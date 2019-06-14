@@ -29,6 +29,7 @@ ngsBandName = 'K';
 % ngsBandW = ; % Central wavelength in m
 % ngsBandBW = ; % Bandwidth in m
 % ngsBandZP = ; % Zero point number of photons
+% % ngsPhotometry = photometry.K; % For a fixed band
 % ngsPhotometry = photometry('wavelength',ngsBandW,'bandwidth',ngsBandBW,
 %   'zeroPoint',ngsBandZP)
 ngsPhotometry = photometry.K;

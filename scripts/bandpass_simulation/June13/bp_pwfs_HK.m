@@ -24,14 +24,15 @@ load ../../../data/MMT_DM336_Actuators.mat
 magnitudeVector = 6:2:14;
 
 % Choice of NGS bandpass
-ngsBandName = 'K';
+ngsBandName = 'HK';
 % ngsBandCustom = 'true'; % Custom band?
 % ngsBandW = ; % Central wavelength in m
 % ngsBandBW = ; % Bandwidth in m
 % ngsBandZP = ; % Zero point number of photons
+% % ngsPhotometry = photometry.K; % For a fixed band
 % ngsPhotometry = photometry('wavelength',ngsBandW,'bandwidth',ngsBandBW,
 %   'zeroPoint',ngsBandZP)
-ngsPhotometry = photometry.K;
+ngsPhotometry = photometry.HK;
 
 % Number of times to run loop and measure Strehl per NGS magnitude (for statistics)
 nInst = 2;
