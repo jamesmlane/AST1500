@@ -18,13 +18,13 @@ addpath(genpath('../../../src/matlab/OOMAO_Masen'))
 outputPath = 'output/';
 
 % Load actuator information for MMT
-load ../../data/MMT_DM336_Actuators.mat
+load ../../../data/MMT_DM336_Actuators.mat
 
 % Choice of NGS magnitudes for simulations
-magnitudeVector = (6,8,10,12,14);
+magnitudeVector = 6:2:14;
 
 % Choice of NGS bandpass
-ngsBandName = 'H'
+ngsBandName = 'H';
 % ngsBandCustom = 'true'; % Custom band?
 % ngsBandW = ; % Central wavelength in m
 % ngsBandBW = ; % Bandwidth in m
@@ -32,7 +32,7 @@ ngsBandName = 'H'
 % % ngsPhotometry = photometry.K; % For a fixed band
 % ngsPhotometry = photometry('wavelength',ngsBandW,'bandwidth',ngsBandBW,
 %   'zeroPoint',ngsBandZP)
-ngsPhotometry = photometry.H
+ngsPhotometry = photometry.H;
 
 % Number of times to run loop and measure Strehl per NGS magnitude (for statistics)
 nInst = 2;
@@ -55,8 +55,8 @@ for i = 1:length(magnitudeVector)
       'windDirection',[0,pi/4,pi]);
 
     % WFS parameters
-    wfsType = 'py'
-    modeType = 'zonal2' % zonal1 (SHWFS), zonal2 (PWFS)
+    wfsType = 'py';
+    modeType = 'zonal2'; % zonal1 (SHWFS), zonal2 (PWFS)
     mag = magnitudeVector(i);
     nLenslet = 24;
     nL   = nLenslet;        % number of lenslets
@@ -65,16 +65,16 @@ for i = 1:length(magnitudeVector)
 
     % Adjust the modulation based on the bandpass
     modulationBase = 2;
-    modulation = modulationBase*(ngsPhotometry.wavelength/photometry.R.wavelength)
+    modulation = modulationBase*(ngsPhotometry.wavelength/photometry.R.wavelength);
 
-    wfs = pyramid(nLenslet,nRes,'modulation',modeulation,...
+    wfs = pyramid(nLenslet,nRes,'modulation',modulation,...
                                 'obstructionRatio',0.10,...
                                 'minLightRatio',0.05);
     %wfs.binning = 2;
     loopGain = 0.5; % Closed loop gain, higher for pyramid
 
     % Telescope parameters
-    dmType = 'ASM'
+    dmType = 'ASM';
     D = 6.5; % Primary diameter in m
     d = D/nL; % Lenslet pitch
     samplingFreq = 1000;
@@ -87,8 +87,8 @@ for i = 1:length(magnitudeVector)
     nPx = nRes; % Redefine resolution to match up
 
     % NGS and science object
-    ngs = source('wavelength',ngsPhotometry)
-    science = source('wavelength',photomtery.K)
+    ngs = source('wavelength',ngsPhotometry);
+    science = source('wavelength',photometry.K);
 
     % Propagation of the calibration source to the WFS through the telescope
     % Show camera and slopes
@@ -376,11 +376,11 @@ for i = 1:length(magnitudeVector)
         end
 
         % Get the mean marechal Strehl near the end of the loop
-        Strehl_marechal = mean(strehlVec(1,end-49:end))
+        Strehl_marechal = mean(strehlVec(1,end-49:end));
         % Append to stats array
         strehlVecMaster(1,L) = Strehl_marechal;
 
     end
-    outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',Band,'band','_modulation',num2str(modulation));
+    outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',ngsBandName,'band','_scaledmodulation2');
     save(outputStr,'strehlVecMaster')
 end
