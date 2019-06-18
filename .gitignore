@@ -15,6 +15,7 @@ notebooks/start_notebook.bash
 
 # By default don't store PDFs
 resources/*.pdf
+resources/ALPAO/*.pdf
 
 #############################################################
 
