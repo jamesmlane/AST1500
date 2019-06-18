@@ -28,6 +28,9 @@ from matplotlib import pyplot as plt
 # from astropy import table
 # from astropy import units as apu
 
+## Scipy
+from scipy import interpolate
+
 # ----------------------------------------------------------------------------
 
 ## Example class
@@ -161,5 +164,101 @@ class ESOSpectrum:
                  wavelength=None):
         # Two options to initialize: filename or data and wavelength
         pass
+    #def
+#cls
+
+# ------------------------------------------------------------------------------
+
+class PhotometricFilter:
+    '''PhotometricFilter
+
+    Class to hold information about photometric filters. Currently supports:
+
+    Bessell: U,B,V,R,I
+    2MASS: J,H,Ks
+
+    Args:
+        filter_class (string) -
+        filter_name (string) -
+        filter_path (string) -
+    '''
+    def __init__(self,
+                 filter_class,
+                 filter_name,
+                 filter_path,
+                 filter_file_type='.dat'
+                 ):
+        if filter_class not in ['Bessell','2MASS']:
+            raise ValueError('{} filter class not supported'.format(filter_class))
+        ##fi
+        if filter_class == 'Bessell':
+            if filter_name not in ['U','V','B','R','I']:
+                raise ValueError('{} not a Bessell filter'.format(filter_name))
+            ##fi
+        ##fi
+        if filter_class == '2MASS':
+            if filter_name not in ['J','H','Ks']:
+                raise ValueError('{} not a 2MASS filter'.format(filter_name))
+            ##fi
+        ##fi
+
+        # Filter path stuff
+        if filter_file_type[0] != '.':
+            filter_file_type = '.'+filter_file_type
+        ##fi
+        filter_name_list = glob.glob(filter_path+'/*'+filter_file_type)
+        if len(filter_name_list) == 0:
+            raise RuntimeError('No filters of type '+filter_file_type+' in '+filter_path)
+        ##fi
+        assert filter_path+'/'+filter_class+'.'+filter_name+filter_file_type in filter_name_list,\
+            filter_class+'.'+filter_name+filter_file_type+' not in '+filter_path
+        ##as
+
+        self.filter_name = filter_name
+        self.filter_class = filter_class
+        self.filename = filter_path+'/'+filter_class+'.'+filter_name+filter_file_type
+
+        # Now read the filter
+        filter_wavelength,filter_response = np.genfromtxt(self.filename).T
+        self.wavelength_data = filter_wavelength/10. # In nm
+        self.response_data = filter_response
+
+        # Now construct a cubic spline of the filter response
+        spl = interpolate.CubicSpline(self.wavelength_data,self.response_data)
+        self._spline_ = spl
+    #def
+
+    def response(self,wavelength):
+        '''response
+
+        Use the cubic spline to get the filter response at an arbitrary
+        wavelength
+
+        Args:
+            wavelength (float or array) - Wavelength(s) in nm to check response
+
+        Returns:
+            response (array) - Response of the filter at the wavelength
+                (from 0 to 1)
+        '''
+        # Check if in wavelength range and output response
+        wvln_min,wvln_max = self.get_wavelength_range()
+        if wavelength > wvln_max or wavelength < wvln_min:
+            response = 0
+        else:
+            response = self._spline_(wavelength)
+        ##ie
+        return response
+    #def
+
+    def get_wavelength_range(self):
+        '''get_wavelength_range:
+
+        Get the wavelength range of the filter data
+
+        Returns: wavelength_range (2-array) - wavelength minimum and
+            maximum in nm
+        '''
+        return [np.min(self.wavelength_data),np.max(self.wavelength_data)]
     #def
 #cls
