@@ -2,6 +2,8 @@
 
 % Closed loop simulation for the MMT AO system bench using the PWFS
 
+% -----------------------------------------------------------------------------
+
 %% Prepare
 
 clear all % Clears all variables
@@ -12,7 +14,7 @@ figDisp = 'yes'; % display all figures? (will slow down the computation)
 addpath(genpath('../../../src/matlab/functions'))
 addpath(genpath('../../../src/matlab/OOMAO_Masen'))
 
-%% Atmospheric parameters
+%% Atmosphere
 
 r0 = 0.11; %in m, for a site like MMT @ 550 nm
 
@@ -66,7 +68,7 @@ tel = telescope(D,'resolution',nRes,...
 % redefine parameters to match up
 nPx = nRes;
 
-%% Definition of a calibration source
+%% Definition of a calibration and science source
 
 % Normalize the total flux of the J band to match the R band for a given guide star magnitude
 % JL doesn't worry about this
@@ -100,7 +102,9 @@ if strcmp(figDisp,'yes')
     slopesDisplay(wfs)
 end
 
-%% Do the calibration
+% -----------------------------------------------------------------------------
+
+%% Define the influence function based on the DM type
 
 switch dmType
     case 'ASM'
@@ -209,7 +213,7 @@ switch modeType
 
         interactionMatrix = zeros(size(wfs.slopes,1),length(modeVec));
         for jj = 1:length(modeVec)
-            
+
             dm.coefs = stroke*zernMatrix(jj,:)';
             ngs=ngs.*tel*dm*wfs;
             interactionMatrix(:,jj) = wfs.slopes./stroke;
@@ -246,8 +250,11 @@ end
 % At this point we've made our command / interaction matrices and
 % We've defined all the aspects of our telescope.
 
-%% Combine the telescope and atmosphere
+% -----------------------------------------------------------------------------
 
+%% Prepare to close the AO loop
+
+% Combine the telescope and atmosphere
 tel = tel+atm;
 % Show the telescope and atmosphere
 if strcmp(figDisp,'yes')
@@ -257,10 +264,7 @@ end
 
 %% Prepare to close the loop
 
-% Resetting the DM command. You want the DM coefficients to remember their
-% position while inside the loop, because you are applying corrections to the
-% current state of the optical system, which is set by the current shape of
-% the DM. But to begin have it flat.
+% Flatten the DM
 dm.coefs = 0;
 
 % Propagation throught the atmosphere to the telescope
@@ -281,7 +285,6 @@ nIteration = exposureTime + startDelay;
 %% Display turbulence and residual phase
 
 if strcmp(figDisp,'yes')
-
     figure(11)
     h = imagesc([turbPhase,ngs.meanRmPhase]);
     axis equal tight
@@ -301,17 +304,17 @@ atm.wavelength = photometry.V;
 %% Calculate phase variance in microns and plot
 
 % Phase variance to micron rms converter
-rmsMicron = @(x) 1e6*sqrt(x).*ngs.wavelength/2/pi;
-if strcmp(figDisp,'yes')
-
-    % Where is the actual plotting call??
-    (12)
-    %plot(u,rmsMicron(total),u([1,end]),rmsMicron(totalTheory)*ones(1,2),u,rmsMicron(residue))
-    grid
-    legend('Full','Full (theory)','Residue','Location','Best')
-    xlabel('Time [s]')
-    ylabel('Wavefront rms [\mum]')
-end
+% rmsMicron = @(x) 1e6*sqrt(x).*ngs.wavelength/2/pi;
+% if strcmp(figDisp,'yes')
+%
+%     % Where is the actual plotting call??
+%     (12)
+%     %plot(u,rmsMicron(total),u([1,end]),rmsMicron(totalTheory)*ones(1,2),u,rmsMicron(residue))
+%     grid
+%     legend('Full','Full (theory)','Residue','Location','Best')
+%     xlabel('Time [s]')
+%     ylabel('Wavefront rms [\mum]')
+% end
 
 %% THEORETICAL PERFORMANCE ANALYSIS - CASE OF THE SINGLE INTEGRATOR LOOP WITH GAIN
 
@@ -342,6 +345,8 @@ science = science.*tel*cam;
 cam.referenceFrame = cam.frame;
 %cam = imager('nyquistSampling',2,'fieldStopSize',1/4*nPx);
 +science; % Take a single frame of the science target
+
+
 
 %% LOOP INIT
 
@@ -395,6 +400,8 @@ tel = tel + atm;
 totalVar  = zeros(1,nIteration);
 residueVar = zeros(1,nIteration);
 dm.coefs = 0;
+
+% -----------------------------------------------------------------------------
 
 %% Run the loop
 
