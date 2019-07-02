@@ -179,52 +179,95 @@ class PhotometricFilter:
 
     Bessell: U,B,V,R,I
     2MASS: J,H,Ks
-
+    
+    Can call just based on the name as long as there is no degenerate overlap. 
+    By default the path is local to the module. If 
+    
     Args:
-        filter_class (string) -
-        filter_name (string) -
-        filter_path (string) -
+        filter_name (string) - Name of the filter
+        filter_name (string) - Class of the filter (e.g. Bessell, 2MASS, ..) [None]
+        filter_path (string) - path to the filter information, None defaults
+            to local module files [None]
+        filter_response_wavelength (float array) - User-supplied filter response 
+            wavelengths [None]
+        filter_response_data (float array) - User-supplied filter response [None]
     '''
     def __init__(self,
-                 filter_class,
                  filter_name,
-                 filter_path,
+                 filter_class=None,
+                 filter_path=None,
                  filter_file_type='.dat'
+                 filter_response_wavelength=None,
+                 filter_response_data=None
                  ):
-        if filter_class not in ['Bessell','2MASS']:
-            raise ValueError('{} filter class not supported'.format(filter_class))
-        ##fi
-        if filter_class == 'Bessell':
-            if filter_name not in ['U','V','B','R','I']:
-                raise ValueError('{} not a Bessell filter'.format(filter_name))
+        # First determine if the filter will be read in or if the wavelength 
+        # and response information will be provided as arguments
+        if filter_response_data != None and filter_response_wavelength != None:
+            _read_in_filter = False
+        else:
+            _read_in_filter = True
+        ##ie
+        
+        # Either read in the filter or the use supplied the information
+        if _read_in_filter:
+        
+            # Default path to filter data. It's a part of the module
+            if filter_path == None:
+                filter_path = os.path.dirname(__file__)+'/data/filters/'
             ##fi
-        ##fi
-        if filter_class == '2MASS':
-            if filter_name not in ['J','H','Ks']:
-                raise ValueError('{} not a 2MASS filter'.format(filter_name))
+            
+            # As long as their is no overlap then set the class based just off the 
+            # name of the filter
+            if filter_name in ['U','V','B','R','I'] and filter_class == None:
+                filter_class = 'Bessell'
             ##fi
-        ##fi
+            if filter_name in ['J','H','Ks'] and filter_class == None:
+                filter_class = '2MASS'
+            ##fi
+            
+            # Check to make sure the class and name make sense
+            if filter_class not in ['Bessell','2MASS']:
+                raise ValueError('{} filter class not supported'.format(filter_class))
+            ##fi
+            if filter_class == 'Bessell':
+                if filter_name not in ['U','V','B','R','I']:
+                    raise ValueError('{} not a Bessell filter'.format(filter_name))
+                ##fi
+            ##fi
+            if filter_class == '2MASS':
+                if filter_name not in ['J','H','Ks']:
+                    raise ValueError('{} not a 2MASS filter'.format(filter_name))
+                ##fi
+            ##fi
 
-        # Filter path stuff
-        if filter_file_type[0] != '.':
-            filter_file_type = '.'+filter_file_type
-        ##fi
-        filter_name_list = glob.glob(filter_path+'/*'+filter_file_type)
-        if len(filter_name_list) == 0:
-            raise RuntimeError('No filters of type '+filter_file_type+' in '+filter_path)
-        ##fi
-        assert filter_path+'/'+filter_class+'.'+filter_name+filter_file_type in filter_name_list,\
-            filter_class+'.'+filter_name+filter_file_type+' not in '+filter_path
-        ##as
+            # Filter path stuff
+            if filter_file_type[0] != '.':
+                filter_file_type = '.'+filter_file_type
+            ##fi
+            filter_path = os.path.abspath(filter_path)
+            filter_name_list = glob.glob(filter_path+'/*'+filter_file_type)
+            if len(filter_name_list) == 0:
+                raise RuntimeError('No filters of type '+filter_file_type+' in '+filter_path)
+            ##fi
+            assert filter_path+'/'+filter_class+'.'+filter_name+filter_file_type in filter_name_list,\
+                filter_class+'.'+filter_name+filter_file_type+' not in '+filter_path
+            ##as
 
-        self.filter_name = filter_name
-        self.filter_class = filter_class
-        self.filename = filter_path+'/'+filter_class+'.'+filter_name+filter_file_type
+            self.filter_name = filter_name
+            self.filter_class = filter_class
+            self.filename = filter_path+'/'+filter_class+'.'+filter_name+filter_file_type
 
-        # Now read the filter
-        filter_wavelength,filter_response = np.genfromtxt(self.filename).T
-        self.wavelength_data = filter_wavelength/10. # In nm
-        self.response_data = filter_response
+            # Now read the filter
+            filter_wavelength,filter_response = np.genfromtxt(self.filename).T
+            self.wavelength_data = filter_wavelength/10. # In nm
+            self.response_data = filter_response
+        
+        else:
+            self.wavelength_data = filter_wavelength_data # In nm
+            self.response_data = filter_response_data
+            self.filter_class = filter_class # None unless supplied
+            self.filter_name = filter_name # None unless supplied
+        ##ie
 
         # Now construct a cubic spline of the filter response
         spl = interpolate.CubicSpline(self.wavelength_data,self.response_data)
