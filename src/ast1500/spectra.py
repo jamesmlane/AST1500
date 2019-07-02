@@ -243,11 +243,10 @@ class PhotometricFilter:
         '''
         # Check if in wavelength range and output response
         wvln_min,wvln_max = self.get_wavelength_range()
-        if wavelength > wvln_max or wavelength < wvln_min:
-            response = 0
-        else:
-            response = self._spline_(wavelength)
-        ##ie
+        response = np.zeros_like(wavelength)
+        where_in_filter_range = np.where( (wavelength > wvln_min) &
+                                          (wavelength < wvln_max) )[0]
+        response[where_in_filter_range] = self._spline_(wavelength[where_in_filter_range])
         return response
     #def
 
