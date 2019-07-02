@@ -40,6 +40,9 @@ class ESOSpectralLibrary:
 
     Class to manipulate the spectral library of
     https://www.eso.org/sci/facilities/paranal/decommissioned/isaac/tools/lib.html
+    
+    Data from Tables of the paper
+    http://vizier.u-strasbg.fr/viz-bin/VizieR?-source=J/PASP/110/863
 
     Args:
         required_arg (data type) - Some description
