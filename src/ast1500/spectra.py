@@ -270,7 +270,7 @@ class PhotometricFilter:
                  filter_name,
                  filter_class=None,
                  filter_path=None,
-                 filter_file_type='.dat'
+                 filter_file_type='.dat',
                  filter_response_wavelength=None,
                  filter_response_data=None
                  ):
