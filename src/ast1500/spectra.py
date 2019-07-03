@@ -163,16 +163,85 @@ class ESOSpectralLibrary:
 class ESOSpectrum:
     '''ESOSpectrum
 
-    Class to accesss ESO spectra
+    Class to accesss ESO spectra. Can be queried by either filename or 
+    data and wavelength.
+    
+    Args:
+        filename (str) -  
+        data (float array) - 
+        wavelength (float array) - 
+        data_normalized (bool) - Has data input already been normalized 
+            Such that it is f_lambda [False]
+        normalization_method (int) - Method for normalizing spectral data. 
+        
     '''
 
     def __init__(self,
-                 fname=None,
+                 filename=None,
                  data=None,
-                 wavelength=None):
+                 wavelength=None,
+                 normalized=False
+                 ):
+                 
         # Two options to initialize: filename or data and wavelength
-        pass
+        self.normalized=normalized
+        if filename == None:
+            assert data != None and wavelength != None,\
+                'If filename is not supplied then data and wavelength must be'
+            self.filename = filename
+            self.wavelength = wavelength
+            if self.normalized:
+                self.data = data
+            else:
+                self._data_raw = data
+            ##ie
+        elif filename != None:
+            self.filename = filename
+            read_wavelength,read_data_raw = np.genfromtxt(filename,usecols=(0,1)).T
+            self.wavelength = read_wavelength
+            if self.normalized:
+                self.data = read_data_raw
+            else:
+                self._data_raw = read_data_raw
+            ##ie
+        ##fi  
+        if self.normalized == False:
+            print('Warning: spectra is not normalized')  
+    ##fi
+    
+    def calculate_magnitude(self,photometric_filter=None,
+        photometric_filter_kws={}):
+        
+        if photometric_filter != None:
+            assert isinstance(photometric_filter,PhotometricFilter),\
+                'photometric_filter must be a PhotometricFilter object'
+        else:
+            assert isinstance(photometric_filter_kws,dict),\
+                'photometric_filter_kws must be a dictionary'
+            assert len(photometric_filter_kws) > 0,\
+                'photometric_filter_kws must have at least 1 element'
+            
+            photometric_filter = PhotometricFilter(**photometric_filter_kws)
+        
+        if self.normalized:
+            response = photometric_filter.response(self.wavelength/10.)
+            mag = -2.5*np.log10( self._convolve_filter_flux(response) )
+        else:
+            raise RuntimeError('Magnitudes for non-normalized spectra are not physical')
+        ##ie
+        return mag
     #def
+    
+    def _convolve_filter_flux(self,response):
+        '''Assumes wavelength in angstroms
+        '''
+        c_angstrom = 3E18
+        assert np.all(np.diff(self.wavelength)==np.diff(self.wavelength)[0]),\
+            'Wavelength data must have equal spacing'
+        dlambda=np.diff(self.wavelength)[0]
+        return np.sum( self.data*response*dlambda ) /\
+            np.sum( response*c_angstrom*dlambda/(self.wavelength**2) )
+    ##def
 #cls
 
 # ------------------------------------------------------------------------------
