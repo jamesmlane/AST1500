@@ -50,7 +50,7 @@ class ESOSpectralLibrary:
     '''
 
     def __init__(self,
-                 path_to_spectra='../../../data/eso_spectral_lib/spectra'
+                 path_to_spectra='/Users/JamesLane/Science/Projects/PhD/AST1500/data/spectra/eso_spectral_lib/proper'
                 ):
         # Set the path to the data
         self.path_to_spectra = os.path.abspath(path_to_spectra)
