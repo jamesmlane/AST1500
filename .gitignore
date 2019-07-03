@@ -4,6 +4,10 @@
 # easily generated
 data/
 
+# Resource directories, big PDFs that aren't 
+# changed
+resources/
+
 # Scratch space
 scratch/
 
