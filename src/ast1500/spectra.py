@@ -56,9 +56,9 @@ class ESOSpectralLibrary:
         self.path_to_spectra = os.path.abspath(path_to_spectra)
 
         # First get the names of all the filters
-        spectra_fnames = glob.glob(path_to_spectra+'*.dat')
+        spectra_fnames = glob.glob(self.path_to_spectra+'/*.dat')
         if len(spectra_fnames)==0:
-            raise ValueError('Could not find any .dat files in {}'.format(path_to_spectra))
+            raise ValueError('Could not find any .dat files in {}'.format(self.path_to_spectra))
         ##fi
 
         self.n_spectra = len(spectra_fnames)
