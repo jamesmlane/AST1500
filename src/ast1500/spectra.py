@@ -123,15 +123,20 @@ class ESOSpectralLibrary:
         return fname
     #def
 
-    def read_spectra(self,name):
+    def read_spectra(self,name,return_data=False,normalized=False):
         '''read_spectra:
 
         Read a spectrum given an index number or the name of a spectrum. Return
         the raw data to the user.
         '''
         fname = self._get_spectra_fname(name)
-        spectra_wavelength, spectra_data = np.genfromtxt(fname,usecols=(0,1)).T
-        return spectra_wavelength, spectra_data
+        if return_data:
+            spectra_wavelength, spectra_data = np.genfromtxt(fname,usecols=(0,1)).T
+            return spectra_wavelength, spectra_data
+        else:
+            spec = ESOSpectrum(filename=fname,normalized=normalized)
+            return spec
+        ##ie
     #def
 
     def set_spectra(self,name):
