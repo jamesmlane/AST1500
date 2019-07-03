@@ -40,6 +40,9 @@ class ESOSpectralLibrary:
 
     Class to manipulate the spectral library of
     https://www.eso.org/sci/facilities/paranal/decommissioned/isaac/tools/lib.html
+    
+    Data from Tables of the paper
+    http://vizier.u-strasbg.fr/viz-bin/VizieR?-source=J/PASP/110/863
 
     Args:
         required_arg (data type) - Some description
@@ -47,15 +50,15 @@ class ESOSpectralLibrary:
     '''
 
     def __init__(self,
-                 path_to_spectra='../../../data/eso_spectral_lib/spectra'
+                 path_to_spectra='/Users/JamesLane/Science/Projects/PhD/AST1500/data/spectra/eso_spectral_lib/proper'
                 ):
         # Set the path to the data
         self.path_to_spectra = os.path.abspath(path_to_spectra)
 
         # First get the names of all the filters
-        spectra_fnames = glob.glob(path_to_spectra+'*.dat')
+        spectra_fnames = glob.glob(self.path_to_spectra+'/*.dat')
         if len(spectra_fnames)==0:
-            raise ValueError('Could not find any .dat files in {}'.format(path_to_spectra))
+            raise ValueError('Could not find any .dat files in {}'.format(self.path_to_spectra))
         ##fi
 
         self.n_spectra = len(spectra_fnames)
@@ -85,7 +88,7 @@ class ESOSpectralLibrary:
             spectra_luminosity[i] = "".join([s for s in temp_name if not s.isdigit()])
         ###i
 
-        self.spectra_metalicity = spectra_metallicity
+        self.spectra_metallicity = spectra_metallicity
         self.spectra_class = spectra_class
         self.spectra_subclass = spectra_subclass
         self.spectra_luminosity = spectra_luminosity
@@ -112,7 +115,7 @@ class ESOSpectralLibrary:
         if type(name) == int:
             fname = self.spectra_filenames[name]
         elif name in self.spectra_names:
-            where_fname = np.where( self.spectra_names == name )[0]
+            where_fname = np.where( self.spectra_names == name )[0][0]
             fname = self.spectra_filenames[where_fname]
         else:
             raise ValueError("name: {} cannot be found in the spectral library".format(name))
@@ -120,15 +123,20 @@ class ESOSpectralLibrary:
         return fname
     #def
 
-    def read_spectra(self,name):
+    def read_spectra(self,name,return_data=False,normalized=False):
         '''read_spectra:
 
         Read a spectrum given an index number or the name of a spectrum. Return
         the raw data to the user.
         '''
         fname = self._get_spectra_fname(name)
-        spectra_wavelength, spectra_data = np.genfromtxt(fname,usecols=(0,1)).T
-        return spectra_wavelength, spectra_data
+        if return_data:
+            spectra_wavelength, spectra_data = np.genfromtxt(fname,usecols=(0,1)).T
+            return spectra_wavelength, spectra_data
+        else:
+            spec = ESOSpectrum(filename=fname,normalized=normalized)
+            return spec
+        ##ie
     #def
 
     def set_spectra(self,name):
@@ -155,16 +163,85 @@ class ESOSpectralLibrary:
 class ESOSpectrum:
     '''ESOSpectrum
 
-    Class to accesss ESO spectra
+    Class to accesss ESO spectra. Can be queried by either filename or 
+    data and wavelength.
+    
+    Args:
+        filename (str) -  
+        data (float array) - 
+        wavelength (float array) - 
+        data_normalized (bool) - Has data input already been normalized 
+            Such that it is f_lambda [False]
+        normalization_method (int) - Method for normalizing spectral data. 
+        
     '''
 
     def __init__(self,
-                 fname=None,
+                 filename=None,
                  data=None,
-                 wavelength=None):
+                 wavelength=None,
+                 normalized=False
+                 ):
+                 
         # Two options to initialize: filename or data and wavelength
-        pass
+        self.normalized=normalized
+        if filename == None:
+            assert data != None and wavelength != None,\
+                'If filename is not supplied then data and wavelength must be'
+            self.filename = filename
+            self.wavelength = wavelength
+            if self.normalized:
+                self.data = data
+            else:
+                self._data_raw = data
+            ##ie
+        elif filename != None:
+            self.filename = filename
+            read_wavelength,read_data_raw = np.genfromtxt(filename,usecols=(0,1)).T
+            self.wavelength = read_wavelength
+            if self.normalized:
+                self.data = read_data_raw
+            else:
+                self._data_raw = read_data_raw
+            ##ie
+        ##fi  
+        if self.normalized == False:
+            print('Warning: spectra is not normalized')  
+    ##fi
+    
+    def calculate_magnitude(self,photometric_filter=None,
+        photometric_filter_kws={}):
+        
+        if photometric_filter != None:
+            assert isinstance(photometric_filter,PhotometricFilter),\
+                'photometric_filter must be a PhotometricFilter object'
+        else:
+            assert isinstance(photometric_filter_kws,dict),\
+                'photometric_filter_kws must be a dictionary'
+            assert len(photometric_filter_kws) > 0,\
+                'photometric_filter_kws must have at least 1 element'
+            
+            photometric_filter = PhotometricFilter(**photometric_filter_kws)
+        
+        if self.normalized:
+            response = photometric_filter.response(self.wavelength/10.)
+            mag = -2.5*np.log10( self._convolve_filter_flux(response) )
+        else:
+            raise RuntimeError('Magnitudes for non-normalized spectra are not physical')
+        ##ie
+        return mag
     #def
+    
+    def _convolve_filter_flux(self,response):
+        '''Assumes wavelength in angstroms
+        '''
+        c_angstrom = 3E18
+        assert np.all(np.diff(self.wavelength)==np.diff(self.wavelength)[0]),\
+            'Wavelength data must have equal spacing'
+        dlambda=np.diff(self.wavelength)[0]
+        return np.sum( self.data*response*dlambda ) /\
+            np.sum( response*c_angstrom*dlambda/(self.wavelength**2) )
+    ##def
 #cls
 
 # ------------------------------------------------------------------------------
@@ -176,52 +253,95 @@ class PhotometricFilter:
 
     Bessell: U,B,V,R,I
     2MASS: J,H,Ks
-
+    
+    Can call just based on the name as long as there is no degenerate overlap. 
+    By default the path is local to the module. If 
+    
     Args:
-        filter_class (string) -
-        filter_name (string) -
-        filter_path (string) -
+        filter_name (string) - Name of the filter
+        filter_name (string) - Class of the filter (e.g. Bessell, 2MASS, ..) [None]
+        filter_path (string) - path to the filter information, None defaults
+            to local module files [None]
+        filter_response_wavelength (float array) - User-supplied filter response 
+            wavelengths [None]
+        filter_response_data (float array) - User-supplied filter response [None]
     '''
     def __init__(self,
-                 filter_class,
                  filter_name,
-                 filter_path,
-                 filter_file_type='.dat'
+                 filter_class=None,
+                 filter_path=None,
+                 filter_file_type='.dat',
+                 filter_response_wavelength=None,
+                 filter_response_data=None
                  ):
-        if filter_class not in ['Bessell','2MASS']:
-            raise ValueError('{} filter class not supported'.format(filter_class))
-        ##fi
-        if filter_class == 'Bessell':
-            if filter_name not in ['U','V','B','R','I']:
-                raise ValueError('{} not a Bessell filter'.format(filter_name))
+        # First determine if the filter will be read in or if the wavelength 
+        # and response information will be provided as arguments
+        if filter_response_data != None and filter_response_wavelength != None:
+            _read_in_filter = False
+        else:
+            _read_in_filter = True
+        ##ie
+        
+        # Either read in the filter or the use supplied the information
+        if _read_in_filter:
+        
+            # Default path to filter data. It's a part of the module
+            if filter_path == None:
+                filter_path = os.path.dirname(__file__)+'/data/filters/'
             ##fi
-        ##fi
-        if filter_class == '2MASS':
-            if filter_name not in ['J','H','Ks']:
-                raise ValueError('{} not a 2MASS filter'.format(filter_name))
+            
+            # As long as their is no overlap then set the class based just off the 
+            # name of the filter
+            if filter_name in ['U','V','B','R','I'] and filter_class == None:
+                filter_class = 'Bessell'
             ##fi
-        ##fi
+            if filter_name in ['J','H','Ks'] and filter_class == None:
+                filter_class = '2MASS'
+            ##fi
+            
+            # Check to make sure the class and name make sense
+            if filter_class not in ['Bessell','2MASS']:
+                raise ValueError('{} filter class not supported'.format(filter_class))
+            ##fi
+            if filter_class == 'Bessell':
+                if filter_name not in ['U','V','B','R','I']:
+                    raise ValueError('{} not a Bessell filter'.format(filter_name))
+                ##fi
+            ##fi
+            if filter_class == '2MASS':
+                if filter_name not in ['J','H','Ks']:
+                    raise ValueError('{} not a 2MASS filter'.format(filter_name))
+                ##fi
+            ##fi
 
-        # Filter path stuff
-        if filter_file_type[0] != '.':
-            filter_file_type = '.'+filter_file_type
-        ##fi
-        filter_name_list = glob.glob(filter_path+'/*'+filter_file_type)
-        if len(filter_name_list) == 0:
-            raise RuntimeError('No filters of type '+filter_file_type+' in '+filter_path)
-        ##fi
-        assert filter_path+'/'+filter_class+'.'+filter_name+filter_file_type in filter_name_list,\
-            filter_class+'.'+filter_name+filter_file_type+' not in '+filter_path
-        ##as
+            # Filter path stuff
+            if filter_file_type[0] != '.':
+                filter_file_type = '.'+filter_file_type
+            ##fi
+            filter_path = os.path.abspath(filter_path)
+            filter_name_list = glob.glob(filter_path+'/*'+filter_file_type)
+            if len(filter_name_list) == 0:
+                raise RuntimeError('No filters of type '+filter_file_type+' in '+filter_path)
+            ##fi
+            assert filter_path+'/'+filter_class+'.'+filter_name+filter_file_type in filter_name_list,\
+                filter_class+'.'+filter_name+filter_file_type+' not in '+filter_path
+            ##as
 
-        self.filter_name = filter_name
-        self.filter_class = filter_class
-        self.filename = filter_path+'/'+filter_class+'.'+filter_name+filter_file_type
+            self.filter_name = filter_name
+            self.filter_class = filter_class
+            self.filename = filter_path+'/'+filter_class+'.'+filter_name+filter_file_type
 
-        # Now read the filter
-        filter_wavelength,filter_response = np.genfromtxt(self.filename).T
-        self.wavelength_data = filter_wavelength/10. # In nm
-        self.response_data = filter_response
+            # Now read the filter
+            filter_wavelength,filter_response = np.genfromtxt(self.filename).T
+            self.wavelength_data = filter_wavelength/10. # In nm
+            self.response_data = filter_response
+        
+        else:
+            self.wavelength_data = filter_wavelength_data # In nm
+            self.response_data = filter_response_data
+            self.filter_class = filter_class # None unless supplied
+            self.filter_name = filter_name # None unless supplied
+        ##ie
 
         # Now construct a cubic spline of the filter response
         spl = interpolate.CubicSpline(self.wavelength_data,self.response_data)
@@ -243,11 +363,10 @@ class PhotometricFilter:
         '''
         # Check if in wavelength range and output response
         wvln_min,wvln_max = self.get_wavelength_range()
-        if wavelength > wvln_max or wavelength < wvln_min:
-            response = 0
-        else:
-            response = self._spline_(wavelength)
-        ##ie
+        response = np.zeros_like(wavelength)
+        where_in_filter_range = np.where( (wavelength > wvln_min) &
+                                          (wavelength < wvln_max) )[0]
+        response[where_in_filter_range] = self._spline_(wavelength[where_in_filter_range])
         return response
     #def
 
