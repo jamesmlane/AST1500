@@ -88,7 +88,7 @@ class ESOSpectralLibrary:
             spectra_luminosity[i] = "".join([s for s in temp_name if not s.isdigit()])
         ###i
 
-        self.spectra_metalicity = spectra_metallicity
+        self.spectra_metallicity = spectra_metallicity
         self.spectra_class = spectra_class
         self.spectra_subclass = spectra_subclass
         self.spectra_luminosity = spectra_luminosity
