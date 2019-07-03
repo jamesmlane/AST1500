@@ -115,7 +115,7 @@ class ESOSpectralLibrary:
         if type(name) == int:
             fname = self.spectra_filenames[name]
         elif name in self.spectra_names:
-            where_fname = np.where( self.spectra_names == name )[0]
+            where_fname = np.where( self.spectra_names == name )[0][0]
             fname = self.spectra_filenames[where_fname]
         else:
             raise ValueError("name: {} cannot be found in the spectral library".format(name))
