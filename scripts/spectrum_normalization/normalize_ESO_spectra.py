@@ -32,8 +32,25 @@ import ast1500.spectra
 # ----------------------------------------------------------------------------
 
 def calculate_magnitude(data,response,wavelength,dlambda):
-    '''
-    Assume dlambda is in angstrom and therefore c will be in angstroms
+    '''calculate_magnitude:
+    
+    Calculates the magnitude from flambda. Assume that flambda is in 
+    erg / s / square cm / Angstrom and dlambda is in Angstroms. Therefore c 
+    will be in Angstroms / s
+    
+    Only photometric system supported currently is AB magnitudes.
+    
+    If zero-point is None then a default will be used if possible.
+    
+    Args:
+        response (float array)
+        wavelength (float array)
+        dlambda (float) - difference between wavelength bins
+        photometric_system (str) - Name of photometric system ['AB']
+        zero_point (float) - Zero point of the filter [None]
+        
+    Returns:
+        magnitude (float)
     '''
     
     c_angstrom = 3E18
