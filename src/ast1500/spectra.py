@@ -232,6 +232,34 @@ class ESOSpectrum:
         return mag
     #def
     
+    def plot_spectrum(self,fig=None,ax=None,range=None,normalize_to_1=True,plot_kws={}):
+        '''plot_spectrum:
+        
+        Plot the spectrum of the source
+        '''
+        if range != None:
+            assert len(range) == 2,'range must be a 2-element array'
+            assert range[0] < range[1],\
+                'The first element of range is not less than the second'
+            where_plot_spectrum = np.where( ( self.wavelength > range[0]  ) &
+                                            ( self.wavelength < range[1] ) )[0]
+            plot_wavelength = self.wavelength(where_plot_spectrum)
+            plot_data = self.data(where_plot_spectrum)
+        ##fi
+        if normalize_to_1 == True:
+            plot_data = plot_data / np.max(plot_data)
+        ##fi
+        if fig == None or ax == None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        ##fi
+        ax.plot(plot_wavelength,plot_data,**plot_kws)
+        ax.set_xlabel(r'$\lambda [\AA]$')
+        ax.set_ylabel(r'Flux')
+        
+        return fig,ax
+    #def
+    
     def _convolve_filter_flux(self,response):
         '''Assumes wavelength in angstroms
         '''
