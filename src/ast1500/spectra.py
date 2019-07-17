@@ -322,14 +322,16 @@ class PhotometricFilter:
             # As long as their is no overlap then set the class based just off the 
             # name of the filter
             if filter_name in ['U','V','B','R','I'] and filter_class == None:
+                print('Warning: assuming filter name {} is of class Bessell'.format(filter_name))
                 filter_class = 'Bessell'
             ##fi
             if filter_name in ['J','H','Ks'] and filter_class == None:
+                print('Warning: assuming filter name {} is of class 2MASS'.format(filter_name))
                 filter_class = '2MASS'
             ##fi
             
             # Check to make sure the class and name make sense
-            if filter_class not in ['Bessell','2MASS']:
+            if filter_class not in ['Bessell','2MASS','Pickles']:
                 raise ValueError('{} filter class not supported'.format(filter_class))
             ##fi
             if filter_class == 'Bessell':
