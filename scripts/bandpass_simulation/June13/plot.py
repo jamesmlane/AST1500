@@ -28,6 +28,10 @@ import scipy.io as sio
 
 # ----------------------------------------------------------------------------
 
+plt.rc('text',usetex=True)
+
+# ----------------------------------------------------------------------------
+
 def load_matlab_array(filename,dict_key=None):
     '''load_matlab_array:
 
@@ -84,7 +88,7 @@ for i in range( len(bands) ):
 
 ax.set_ylim(25,100)
 ax.set_xlabel('Magnitude')
-ax.set_ylabel('Strehl [%]')
+ax.set_ylabel(r'$K-$band Strehl [\%]')
 ax.legend()
 
 plt.savefig('StrehlStats.pdf')
