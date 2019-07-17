@@ -344,6 +344,11 @@ class PhotometricFilter:
                     raise ValueError('{} not a 2MASS filter'.format(filter_name))
                 ##fi
             ##fi
+            if filter_class == 'Pickles':
+                if filter_name not in ['V','Ic','K']:
+                    raise ValueError('{} not a Pickles filter'.format(filter_name))
+                ##fi
+            ##fi
 
             # Filter path stuff
             if filter_file_type[0] != '.':
