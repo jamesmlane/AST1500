@@ -53,11 +53,15 @@ def calculate_magnitude(data,response,wavelength,dlambda):
         magnitude (float)
     '''
     
-    c_angstrom = 3E18
-    calc_num = np.sum( data*response*dlambda )
-    calc_denom = np.sum( response*c_angstrom*dlambda/(wavelength**2) )    
-
-    return -2.5*np.log10( calc_num / calc_denom )
+    c_angstrom = 3E18 # Speed of light in angstroms
+    
+    if photometric_system == 'AB':
+        AB_zero_point = 48.60 # 3161 Jy  after de-logging
+        numer = np.sum( data * response * dlambda )
+        denom = np.sum( (c_angstrom/(wavelength**2)) * response * dlambda )
+        m_AB = -2.5*np.log10( numer/denom ) - AB_zero_point 
+        return m_AB
+    ##fi
 #def
 
 # ----------------------------------------------------------------------------
