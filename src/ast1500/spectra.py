@@ -281,6 +281,7 @@ class PhotometricFilter:
 
     Bessell: U,B,V,R,I
     2MASS: J,H,Ks
+    Pickles: V,Ic,K (https://ui.adsabs.harvard.edu/abs/1998PASP..110..863P/abstract)
     
     Can call just based on the name as long as there is no degenerate overlap. 
     By default the path is local to the module. If 
