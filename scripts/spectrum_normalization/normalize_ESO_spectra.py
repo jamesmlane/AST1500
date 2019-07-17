@@ -71,7 +71,12 @@ spec_normed_dir = '../../data/spectra/eso_spectral_lib/normalized/'
 spec_proper_dir = '../../data/spectra/eso_spectral_lib/proper/'
 
 spec_library = ast1500.spectra.ESOSpectralLibrary(path_to_spectra=spec_normed_dir)
-v_band_filter = ast1500.spectra.PhotometricFilter('V')
+v_band_filter = ast1500.spectra.PhotometricFilter(filter_name='V',
+    filter_class='Pickles')
+ic_band_filter = ast1500.spectra.PhotometricFilter(filter_name='Ic',
+    filter_class='Pickles')
+k_band_filter = ast1500.spectra.PhotometricFilter(filter_name='K',
+    filter_class='Pickles')
 
 spec_info_filename = '../../data/spectra/eso_spectral_lib/information.fit'
 hdu = fits.open(spec_info_filename)
@@ -80,6 +85,12 @@ data = hdu[1].data
 # Get information about the spectrum
 Mv_sptype = data['SpType']
 Mv = data['Mbol']-data['BCv']
+Mic = data['Mbol']-data['BCi']
+Mk = data['Mbol']-data['BCk']
+
+Mv_AB_correction = 0.02
+Mic_AB_correction = 0.45
+Mk_AB_correction = 1.85
 
 # Loop over each spectrum
 for i in range( spec_library.n_spectra ):
@@ -92,13 +103,17 @@ for i in range( spec_library.n_spectra ):
     # Figure out where this spectrum is in the information file
     where_spectra_in_info = np.where( Mv_sptype.upper() == spec_name.upper() )[0]
     this_Mv = Mv[where_spectra_in_info]
+    this_Mic = Miv[where_spectra_in_info]
+    this_Mk = Mk[where_spectra_in_info]
     
-    # Calculate the response and difference
-    v_band_response = v_band_filter.response(spec_wavelength/10.)
+    # Calculate the filter responses and difference
+    v_band_response = v_band_filter.response(spec_wavelength)
+    ic_band_response = ic_band_filter.response(spec_wavelength)
+    k_band_response = k_band_filter.response(spec_wavelength)
     delta_lambda = np.diff(spec_wavelength)[0]
     
     # Calculate the normalized V-band magnitude
-    mag_normed = calculate_magnitude(spec_data,v_band_response,spec_wavelength,
+    m_v_normed = calculate_magnitude(spec_data,v_band_response,spec_wavelength,
         delta_lambda)
     Mv_correction = this_Mv - mag_normed
     
