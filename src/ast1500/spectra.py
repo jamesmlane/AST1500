@@ -406,7 +406,29 @@ class PhotometricFilter:
         response[where_in_filter_range] = self._spline_(wavelength[where_in_filter_range])
         return response
     #def
-
+    
+    def plot_response(self,wavlength,fig=None,ax=None,plot_kws={}):
+        '''plot_response:
+        
+        Plot the response of a filter over a range of wavelengths
+        
+        Args:
+            wavelength (float or array) = Wavelength(s) in Angstroms to get 
+                response
+        
+        '''
+        if fig==None or ax==None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+        ##fi
+        
+        response = self.response(wavelength)
+        ax.plot(wavelength,response,**plot_kws)
+        ax.set_xlabel(r'$\lambda [\AA]$')
+        ax.set_ylabel(r'Response')
+        return fig,ax
+    #def
+        
     def get_wavelength_range(self):
         '''get_wavelength_range:
 
