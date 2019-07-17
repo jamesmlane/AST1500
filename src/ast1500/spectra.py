@@ -292,7 +292,7 @@ class PhotometricFilter:
         filter_path (string) - path to the filter information, None defaults
             to local module files [None]
         filter_response_wavelength (float array) - User-supplied filter response 
-            wavelengths [None]
+            wavelengths in Angstroms [None]
         filter_response_data (float array) - User-supplied filter response [None]
     '''
     def __init__(self,
@@ -362,11 +362,11 @@ class PhotometricFilter:
 
             # Now read the filter
             filter_wavelength,filter_response = np.genfromtxt(self.filename).T
-            self.wavelength_data = filter_wavelength/10. # In nm
+            self.wavelength_data = filter_wavelength # In Angstroms
             self.response_data = filter_response
         
         else:
-            self.wavelength_data = filter_wavelength_data # In nm
+            self.wavelength_data = filter_wavelength_data # In Angstroms
             self.response_data = filter_response_data
             self.filter_class = filter_class # None unless supplied
             self.filter_name = filter_name # None unless supplied
@@ -384,7 +384,8 @@ class PhotometricFilter:
         wavelength
 
         Args:
-            wavelength (float or array) - Wavelength(s) in nm to check response
+            wavelength (float or array) - Wavelength(s) in Angstroms to get 
+                response
 
         Returns:
             response (array) - Response of the filter at the wavelength
