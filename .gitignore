@@ -2,14 +2,10 @@
 
 # Data directories, big files that are
 # easily generated
-data/
-
-# Resource directories, big PDFs that aren't 
-# changed
-resources/
+/data/
 
 # Scratch space
-scratch/
+/scratch/
 
 # Notebook initialization script
 notebooks/start_notebook.bash
@@ -18,8 +14,8 @@ notebooks/start_notebook.bash
 .DS_Store
 
 # By default don't store PDFs
-resources/*.pdf
-resources/ALPAO/*.pdf
+/resources/*.pdf
+/resources/ALPAO/*.pdf
 
 #############################################################
 
