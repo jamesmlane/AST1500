@@ -44,6 +44,8 @@ loop.BuildCM();
 loop.BuildZ2C();
 
 %% Create our interaction matrix
+wbfig = waitbar(0,'Creating interaction matrix...');
+
 % Loop over the number of actuators
 for i=1:dm.nAct
   
@@ -76,7 +78,10 @@ for i=1:dm.nAct
 
   % Append this column into the interaction matrix
   interactionMatrix(i,:) = sVec;
+  
+  waitbar(i/dm.nAct)
 end
+close(wbfig)
 
 %% Plots of the interaction matrices
 
@@ -91,6 +96,16 @@ colorbar
 %% Perform SVD and pseudoinverse
 [U,S,V] = svd(interactionMatrix,'econ');
 eigenValues = diag(S);
+iS = diag(1./eigenValues);
+
+subplot(1,2,2)
+semilogy(eigenValues,'.')
+xlabel('Eigen modes')
+ylabel('Eigen values')
+
+% The last 4 eigen values are filtered out
+
+
 
 %% Shut it down
 dm.Reset();
