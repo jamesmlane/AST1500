@@ -1,9 +1,32 @@
-% make_cm.m
+%% make_cm.m
 % Author - James Lane
 % Make the command matrix for the Shack Hartmann Wavefront Sensor
 
-% Define how many pushes and pulls there will be, and what their magnitudes
-% will be.
+%% Initiating the system
+% getenv('ACEROOT')
+setenv( 'ACEROOT', 'C:\Users\Admin\Documents\Alpao\AlpaoCoreEngine')
+addpath( fullfile(getenv('ACEROOT'), 'matlab') );
+acecsStartup();
+userStartup
+dm.Reset();
+
+% Switch on the monitoring windows
+wfs.StartRtd();
+wfs.StartSlopeRtd();
+wfs.StartAlignmentRtd();
+wfs.StartWavefrontRtd();
+dm.StartMonitoring();
+wfs.sCam.dit = 0.06; % Set camera exposure time in ms
+
+% Initiate the loop
+loop.StartMonitoring();
+loop = aceloopLOOP();
+loop.set('sWfs', wfs);
+loop.set('sWfc', dm);
+loop.Online();
+
+%% Definitions
+% Number of pushes and pulls, and their magnitudes
 pauseTime = 0.1;      % Time to pause between command and slope acquisition
 nAverage = 5;         % Number of frames to average for each push-pull
 nbPushPull = 5;       % Number of push-pull
@@ -15,11 +38,17 @@ nSlopeY = size(wfs.slopeY,1);
 nSlopes = nSlopeX + nSlopeY;
 interactionMatrix = zeros( dm.nAct, nSlopeX+nSlopeY );
 
+%% Make the ALPAO command matrix
+loop.BuildIM(0.1, nAverage, nbPushPull);
+loop.BuildCM();
+loop.BuildZ2C();
+
+%% Create our interaction matrix
 % Loop over the number of actuators
 for i=1:dm.nAct
   
   % Setup the array that will hold the push-pull samples
-  sDiff = zeros(nSlopes,1)
+  sDiff = zeros(nSlopes,1);
   
   % For each actuator loop over the number of push-pull pairs
   for j=1:nbPushPull
@@ -33,17 +62,41 @@ for i=1:dm.nAct
     pause(pauseTime)
     sPullX = wfs.slopeX;
     sPullY = wfs.slopeY;
+    dm.cmdVector(i)=0;
     
     % Calculate the difference and append
     sDiffX = sPushX-sPullX;
     sDiffY = sPushY-sPullY;
-    sDiff = sDiff + [sDiffX,sDiffY];
+    sDiff = sDiff + [sDiffX;sDiffY];
     
   end
   
   % Take the average of the slope vectors
-  sVec = sDiff / nbPushPull / pushPullValue
+  sVec = sDiff/(2*nbPushPull)/pushPullValue;
 
   % Append this column into the interaction matrix
   interactionMatrix(i,:) = sVec;
 end
+
+%% Plots of the interaction matrices
+
+f1 = figure('Name','My Interaction Matrix');
+imagesc(interactionMatrix);
+colorbar
+
+f2 = figure('Name','ALPAO Interaction Matrix');
+imagesc(loop.interactionMatrix);
+colorbar
+
+%% Perform SVD and pseudoinverse
+[U,S,V] = svd(interactionMatrix,'econ');
+eigenValues = diag(S);
+
+%% Shut it down
+dm.Reset();
+dm.StopMonitoring();
+wfs.StopRtd();
+wfs.StopSlopeRtd();
+wfs.StopAlignmentRtd();
+wfs.StopWavefrontRtd();
+loop.StopMonitoring();
