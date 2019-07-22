@@ -52,3 +52,25 @@ end
 [U,S,V] = svd(interactionMatrix,'econ')
 eigenValues = diag(S)
 iS = diag(1./eigenValues)
+
+subplot(1,2,2)
+semilogy(eigenValues,'.')
+xlabel('Eigen modes')
+ylabel('Eigen values')
+
+% the 4 last eigen values are filtered out
+
+condVec = eigenValues(1)./eigenValues;
+condNum = 400;
+index = condVec > condNum;
+nThresholded = sum(index);
+
+%nThresholded = (modeVec(end)-300);
+iS = diag(1./eigenValues(1:end-nThresholded));
+[nS,nC] = size(interactionMatrix);
+iS(nC,nS) = 0;
+
+% and then the command matrix is derived.
+commandMatrix = V*iS*U';
+dmCalib.M = commandMatrix;
+dmCalib.nThresholded = nThresholded;
