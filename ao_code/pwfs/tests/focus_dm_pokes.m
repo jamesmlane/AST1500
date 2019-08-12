@@ -220,10 +220,15 @@ poke_index = 40; % Which actuator to poke
 
 f5 = figure('Name','Monitoring DM Pokes');
 
-ax1 = subplot(2,2,1) % Show the initial X slope measurement
-ax2 = subplot(2,2,2) % Show the initial Y slope measurement
-ax3 = subplot(2,2,3) % Show the current X slope measurement
-ax4 = subplot(2,2,4) % Show the current Y slope measurement
+ax1 = subplot(3,3,1) % Show the initial X slope measurement
+ax2 = subplot(3,3,2) % Show the initial Y slope measurement
+ax3 = subplot(3,3,3) % Show the current X slope measurement
+ax4 = subplot(3,3,4) % Show the current Y slope measurement
+ax5 = subplot(3,3,5) % Show the difference in X
+ax6 = subplot(3,3,6) % Show the difference in Y
+
+% Grab slope maps and populate the plots
+
 
 % Loop over the number of iterations and update the image each time
 n_iteration = 1000;
