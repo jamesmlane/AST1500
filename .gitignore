@@ -17,6 +17,11 @@ notebooks/start_notebook.bash
 /resources/*.pdf
 /resources/ALPAO/*.pdf
 /resources/Papers/*.pdf
+/resources/Texts/*.pdf
+/resources/Filters/*.pdf
+
+# By default don't record information in presentations
+/presentations
 
 #############################################################
 
