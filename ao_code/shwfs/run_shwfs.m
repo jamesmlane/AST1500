@@ -43,9 +43,9 @@ nSlopes = nSlopeX + nSlopeY;
 interactionMatrix = zeros( dm.nAct, nSlopeX+nSlopeY );
 
 %% Make the ALPAO command matrix
-loop.BuildIM(0.1, nAverage, nbPushPull);
-loop.BuildCM();
-loop.BuildZ2C();
+% loop.BuildIM(0.1, nAverage, nbPushPull);
+% loop.BuildCM();
+% loop.BuildZ2C();
 
 %% Create our interaction matrix
 wbfig = waitbar(0,'Creating interaction matrix...');
@@ -95,11 +95,11 @@ ylabel('Actuator')
 imagesc(interactionMatrix);
 colorbar
 
-f2 = figure('Name','ALPAO Interaction Matrix');
-xlabel('Lenslet Slope Measurement')
-ylabel('Actuator')
-imagesc(loop.interactionMatrix);
-colorbar
+% f2 = figure('Name','ALPAO Interaction Matrix');
+% xlabel('Lenslet Slope Measurement')
+% ylabel('Actuator')
+% imagesc(loop.interactionMatrix);
+% colorbar
 
 %% Perform SVD and pseudoinverse
 [U,S,V] = svd(interactionMatrix);
@@ -108,10 +108,10 @@ iS = diag(1./eigenValues);
 
 % Decide on the number of eigenvalues to threshold
 condVec = eigenValues(1)./eigenValues;
-condNum = 30; % Max Eigenvalue / Eigenvalue threshold
+condNum = 4; % Max Eigenvalue / Eigenvalue threshold
 index = condVec > condNum;
 nThresholded = sum(index);
-nThresholded = 24
+% nThresholded = 24
 fprintf('%i / 97 modes removed\n',nThresholded)
 
 % Plot the eigenvalues
@@ -138,47 +138,71 @@ ylabel('Lenslet Slope Measurement')
 colorbar
 caxis([-70,70])
 
-f6 = figure('Name','ALPAO Command Matrix');
-imagesc(loop.commandMatrix);
-xlabel('Actuator')
-ylabel('Lenslet Slope Measurement')
-colorbar
-caxis([-70,70])
+% f6 = figure('Name','ALPAO Command Matrix');
+% imagesc(loop.commandMatrix);
+% xlabel('Actuator')
+% ylabel('Lenslet Slope Measurement')
+% colorbar
+% caxis([-70,70])
 
-f7 = figure('Name','Command Matrix Difference');
-diffCommandMatrix = loop.commandMatrix - commandMatrix;
-imagesc(diffCommandMatrix);
-xlabel('Actuator')
-ylabel('Lenslet Slope Measurement')
-colorbar
-caxis([-10,10])
+% f7 = figure('Name','Command Matrix Difference');
+% diffCommandMatrix = loop.commandMatrix - commandMatrix;
+% imagesc(diffCommandMatrix);
+% xlabel('Actuator')
+% ylabel('Lenslet Slope Measurement')
+% colorbar
+% caxis([-10,10])
 
-f8 = figure('Name','Standard Deviation of Actuator Response');
-stdDevCommandMatrixColumns = zeros(dm.nAct,1);
-for i=1:dm.nAct
-    diffCommandMatrixColumn = diffCommandMatrix(:,i);
-    stdDevCommandMatrixColumns(i) = std(diffCommandMatrixColumn);
-end
-plot(1:dm.nAct,stdDevCommandMatrixColumns,'.')
-xlabel('Actuator')
-ylabel('Slope Response Standard Deviation')
+% f8 = figure('Name','Standard Deviation of Actuator Response');
+% stdDevCommandMatrixColumns = zeros(dm.nAct,1);
+% for i=1:dm.nAct
+%     diffCommandMatrixColumn = diffCommandMatrix(:,i);
+%     stdDevCommandMatrixColumns(i) = std(diffCommandMatrixColumn);
+% end
+% plot(1:dm.nAct,stdDevCommandMatrixColumns,'.')
+% xlabel('Actuator')
+% ylabel('Slope Response Standard Deviation')
 
 % hVAIndex = 1:dm.nAct;
 % highVariationActuators = hVAIndex(stdDevCommandMatrixColumns > 2);
 
 %% Create the loop
 
+% First do a single application of the vector
+
 % Get slopes
 sX = wfs.slopeX;
 sY = wfs.slopeY;
-sVec = [sX,sY];
+sVec = [sX;sY];
 
 % Make DM commands
-commandVec = commandMatrix'*sVec
-dmIndex = 1:dm.nAct
+commandVec = commandMatrix'*sVec;
+dmIndex = 1:dm.nAct;
 
 % Apply the DM commands
-dm.cmdVector(dmIndex) = -loopGain * commandVec
+dm.cmdVector(dmIndex) = -commandVec;
+
+
+nsteps = 5000;
+for i=1:nsteps
+   
+    curVector = dm.cmdVector;
+    
+    % Get slopes
+    sX = wfs.slopeX;
+    sY = wfs.slopeY;
+    sVec = [sX;sY];
+    
+    commandVec = curVector - loopGain*commandMatrix'*sVec;
+    
+    dm.cmdVector(dmIndex) = commandVec;
+    
+    pause(0.01)
+    
+    disp(i)
+end
+
+
 
 %% How similar are the commands that would be applied?
 
@@ -190,11 +214,11 @@ dm.cmdVector(dmIndex) = -loopGain * commandVec
 % myCommands = commandMatrix'*sTest
 % alpaoCommands = loop.commandMatrix'*sTest
 %
-% f9 = figure('Name','Compare DM commands');
-% subplot(3,1,1)
-% plot(1:dm.nAct, myCommands)
-% xlabel('Actuator')
-% ylabel('Poke magnitude')
+f9 = figure('Name','Compare DM commands');
+subplot(3,1,1)
+plot(1:dm.nAct, commandVec)
+xlabel('Actuator')
+ylabel('Poke magnitude')
 %
 % subplot(3,1,2)
 % plot(1:dm.nAct, alpaoCommands)
