@@ -12,7 +12,7 @@ figDisp = 'yes'; % display all figures? (will slow down the computation)
 
 % Project-relative paths to OOMAO and helper function
 addpath(genpath('../../../src/matlab/functions'))
-addpath(genpath('../../../src/matlab/OOMAO_Masen'))
+addpath(genpath('../../../src/matlab/OOMAO'))
 
 %% Atmosphere
 
