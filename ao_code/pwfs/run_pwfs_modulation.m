@@ -29,15 +29,17 @@ loop.set('sWfs', wfs);
 loop.set('sWfc', dm);
 loop.Online();
 
-%% Monitor the DM
+%% Setup and monitor the DM
 dm.StopMonitoring();
 dm.StartMonitoring();
+load('./assets/flatDMCommands.m');
+dm.cmdVector(1:dm.nAct) = flatDMCommands;
 
 %% Setup the PWFS camera
 vid = videoinput('pointgrey', 1);
 get(vid)
 shutter = 0.01;
-flushdata(vid);% clears all frames from buffer
+flushdata(vid); % clears all frames from buffer
 src = getselectedsource(vid);
 vid.FramesPerTrigger = 1;
 vid.TriggerRepeat = inf;
@@ -135,7 +137,7 @@ condNum = 5; % Max Eigenvalue / Eigenvalue threshold
 index = condVec > condNum;
 
 % Plot the eigenvalues and the chosen conditioning parameter
-f3 = figure('Name','Eigenvalues')
+f2 = figure('Name','Eigenvalues')
 semilogy(eigenValues/eigenValues(1),'.')
 line([1,97],[1./condNum,1./condNum],'Color','red')
 xlabel('Eigenmodes')
@@ -156,7 +158,7 @@ commandMatrix = V*iSth*U';
 
 %% Plot the command matrices
 
-f5 = figure('Name','My Command Matrix');
+f3 = figure('Name','My Command Matrix');
 imagesc(commandMatrix);
 xlabel('Actuator')
 ylabel('Pixel Slope Measurement')
@@ -215,8 +217,6 @@ for i=1:nsteps
     disp(i)
 end
 
-
-
 %% How similar are the commands that would be applied?
 
 % get a set of slopes
@@ -250,7 +250,6 @@ end
 % hold off
 % xlabel('Actuator')
 % ylabel('Poke magnitude')
-
 
 %% Shut it down
 
