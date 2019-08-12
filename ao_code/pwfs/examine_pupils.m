@@ -1,6 +1,6 @@
 %% measure_slopes.m
 % Author - James Lane
-% Capture an image of the PWFS pupils and measure the resulting slopes
+% Check the positioning of the pupils on the pyramid sensor
 
 %% Set local paths
 addpath( genpath('../../src/matlab/pwfs') )
@@ -17,23 +17,16 @@ triggerconfig(vid,'manual');
 start(vid);
 
 %% Get the image
-%
-% tiffObject = Tiff('./test_images/pyramid_test_2019-06-21-182902-0000.tif','r');
-% imageData = read(tiffObject);
-% imageData = sum(imageDat)
-
 flushdata(vid);
 [imageData,ts] = PWFSImageCapture(vid);
 imageData = double(imageData);
 
 %% Show the image
-
 f1 = figure('Name','Pyramid WFS Image');
 colormap gray
 imagesc(imageData)
 
 %% Define the location and size of the pupils
-
 nPupil = 4;
 pupilExtractGeometry = 'circular'; % Geometry to extract pupils
 pupilRadius = 73; % Pixels
@@ -42,7 +35,6 @@ pupilRow = [200,197,833,828];
 pupilNames = ["Pupil 1","Pupil 2","Pupil 3","Pupil 4"];
 
 %% Draw circles around the pupil locations
-
 f2 = figure('Name','Pyramid WFS Pupil Locations');
 colormap gray
 imagesc(imageData)
@@ -54,7 +46,6 @@ hold off
 legend
 
 %% Loop over each pupil and extract it
-
 extractRadius = pupilRadius+10;
 
 I1 = imageData( pupilRow(1)-extractRadius:pupilRow(1)+extractRadius,...
@@ -140,11 +131,10 @@ imagesc( SyMap )
 colorbar
 title('Y Slopes')
 
-%% Functions
-
-function h = draw_circle(x,y,r,name)
-    th = 0:pi/50:2*pi;
-    xunit = r * cos(th) + x;
-    yunit = r * sin(th) + y;
-    h = plot(xunit, yunit, 'DisplayName',name);
-end
+% %% Functions
+% function h = draw_circle(x,y,r,name)
+%     th = 0:pi/50:2*pi;
+%     xunit = r * cos(th) + x;
+%     yunit = r * sin(th) + y;
+%     h = plot(xunit, yunit, 'DisplayName',name);
+% end
