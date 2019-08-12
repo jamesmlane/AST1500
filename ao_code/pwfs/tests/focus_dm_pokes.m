@@ -187,58 +187,62 @@ dm.Reset();
 dm.cmdVector(1:dm.nAct) = curDMCommands;
 stop(vid)
 
-%% Create the loop
-
-dmIndex = 1:dm.nAct;
-start(vid);
-figure();
-
-nsteps = 5000;
-for i=1:nsteps
-
-    curVector = dm.cmdVector;
-
-    % Get slopes
-    [sX,sY] = PWFSGetSlopesModulation(vid);
-
-    commandVec = curVector - loopGain*commandMatrix'*sVec;
-
-    dm.cmdVector(dmIndex) = commandVec;
-
-    pause(0.01)
-
-    [imageData,ts] = PWFSImageCaptureModulation(vid);
-    imageData = double(imageData);
-    imagesc(imageData)
-
-    disp(i)
-end
-
 %% Setup the monitoring of a DM poke
 
 poke_index = 40; % Which actuator to poke
 
 f5 = figure('Name','Monitoring DM Pokes');
 
-ax1 = subplot(3,3,1) % Show the initial X slope measurement
-ax2 = subplot(3,3,2) % Show the initial Y slope measurement
-ax3 = subplot(3,3,3) % Show the current X slope measurement
-ax4 = subplot(3,3,4) % Show the current Y slope measurement
-ax5 = subplot(3,3,5) % Show the difference in X
-ax6 = subplot(3,3,6) % Show the difference in Y
+ax1 = subplot(3,3,1); % Show the initial X slope measurement
+ax2 = subplot(3,3,2); % Show the initial Y slope measurement
+ax3 = subplot(3,3,3); % Show the current X slope measurement
+ax4 = subplot(3,3,4); % Show the current Y slope measurement
+ax5 = subplot(3,3,5); % Show the difference in X
+ax6 = subplot(3,3,6); % Show the difference in Y
 
 % Grab slope maps and populate the plots
+start(vid);
+dm.cmdVector(poke_index) = 0.5;
+pause(0.1);
+I1,I2,I3,I4,Sx_init,Sy_init = PWFSGetSlopeMapsModulation(vid);
+dm.cmdVector(poke_index) = curDMCommands(poke_index);
+stop(vid);
 
+subplot(ax1);
+imagesc(Sx_init);
+
+subplot(ax2);
+imagesc(Sy_init);
 
 % Loop over the number of iterations and update the image each time
 n_iteration = 1000;
+start(vid);
 for i = 1:n_iteration
 
+  % Poke the actuator and measure slopes
+  dm.cmdVector(poke_index) = 0.5;
+  pause(0.1);
+  I1,I2,I3,I4,Sx,Sy = PWFSGetSlopeMapsModulation(vid);
+  dm.cmdVector(poke_index) = curDMCommands(poke_index);
 
+  subplot(ax3);
+  imagesc(Sx);
 
+  subplot(ax4);
+  imagesc(Sy);
+
+  subplot(ax5);
+  imagesc(Sx-Sx_init);
+
+  subplot(ax6);
+  imagesc(Sy-Sy_init);
+
+  pause(1.0)
+
+end
+stop(vid);
 
 %% Shut it down
-
 wfs.StopRtd();
 wfs.StopSlopeRtd();
 wfs.StopAlignmentRtd();
