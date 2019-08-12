@@ -191,7 +191,6 @@ dm.cmdVector(1:dm.nAct) = curDMCommands;
 stop(vid)
 
 %% Create the loop
-
 dmIndex = 1:dm.nAct;
 start(vid);
 figure();
@@ -252,7 +251,6 @@ end
 % ylabel('Poke magnitude')
 
 %% Shut it down
-
 wfs.StopRtd();
 wfs.StopSlopeRtd();
 wfs.StopAlignmentRtd();
