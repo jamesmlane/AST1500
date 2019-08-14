@@ -13,14 +13,20 @@ acecsStartup();
 userStartup
 dm.Reset();
 
-%% Define the ALPAO loop
+% Monitor the DM
+dm.StopMonitoring();
+dm.StartMonitoring();
+
+% Get current DM commands
+load('./assets/flatDMCommands.mat')
+% dm.cmdVector(1:dm.nAct)=curDMCommands;
 
 % Switch on the monitoring windows
-wfs.StartRtd();
-wfs.StartSlopeRtd();
-wfs.StartAlignmentRtd();
-wfs.StartWavefrontRtd();
-wfs.sCam.dit = 0.06; % Set camera exposure time in ms
+% wfs.StartRtd();
+% wfs.StartSlopeRtd();
+% wfs.StartAlignmentRtd();
+% wfs.StartWavefrontRtd();
+% wfs.sCam.dit = 0.06; % Set camera exposure time in ms
 
 % Initiate the loop
 loop.StartMonitoring();
@@ -29,22 +35,22 @@ loop.set('sWfs', wfs);
 loop.set('sWfc', dm);
 loop.Online();
 
-%% Setup and monitor the DM
-dm.StopMonitoring();
-dm.StartMonitoring();
-load('./assets/flatDMCommands.m');
-dm.cmdVector(1:dm.nAct) = flatDMCommands;
-
-%% Setup the PWFS camera
+%% Setup the camera
 vid = videoinput('pointgrey', 1);
 get(vid)
-shutter = 0.01;
-flushdata(vid); % clears all frames from buffer
+shutter = 20; % Exposure time in ms
+flushdata(vid);% clears all frames from buffer
 src = getselectedsource(vid);
 vid.FramesPerTrigger = 1;
 vid.TriggerRepeat = inf;
-triggerconfig(vid,'manual');
-start(vid);
+src.ShutterMode = 'Manual';
+src.ExposureMode = 'Off';
+src.GainMode = 'Manual';
+src.Gain = 0;
+src.FrameRateMode = 'Manual';
+src.FrameRate = 30;
+src.Shutter = shutter;
+triggerconfig(vid,'hardware','fallingEdge','externalTriggerMode0-Source0');
 
 %% Initialize the tip-tilt stage
 frequency = 50.0; % Hz
@@ -52,7 +58,7 @@ amplitude = 50 / 0.7289; % In microns
 offset = 2500; % Offset in micro radians
 xscale = 0.7289; % Fractional amplitude correction in X
 phaseshift = 1.8837;
-[E727,Controller] = Start_Modulation(frequency, amplitude, xscale, phaseshift);
+[E727,Controller] = StartModulation(frequency, amplitude, xscale, phaseshift);
 
 %% Definitions
 pauseTime = 0.1;      % Time to pause between command and slope acquisition
@@ -62,7 +68,9 @@ pushPullValue = 0.12; % Magnitude of push-pull
 loopGain = 0.3;       % Loop gain
 
 % Get slopes to check numbers
-[slopeX,slopeY] = PWFSGetSlopes(vid);
+start(vid)
+[slopeX,slopeY] = PWFSGetSlopesModulation(vid);
+stop(vid)
 
 % Setup the interaction matrix array
 nSlopeX = size(slopeX,1);
@@ -91,10 +99,10 @@ for i=1:dm.nAct
     % Acquire slopes
     dm.cmdVector(i)=pushPullValue;
     pause(pauseTime)
-    [sPushX,sPushY] = PWFSGetSlopes(vid);
+    [sPushX,sPushY] = PWFSGetSlopesModulation(vid);
     dm.cmdVector(i)=-pushPullValue;
     pause(pauseTime)
-    [sPullX,sPullY] = PWFSGetSlopes(vid);
+    [sPullX,sPullY] = PWFSGetSlopesModulation(vid);
     dm.cmdVector(i)=curDMCommands(i);
 
     % Calculate the difference and append
@@ -137,7 +145,7 @@ condNum = 5; % Max Eigenvalue / Eigenvalue threshold
 index = condVec > condNum;
 
 % Plot the eigenvalues and the chosen conditioning parameter
-f2 = figure('Name','Eigenvalues')
+f2 = figure('Name','Eigenvalues');
 semilogy(eigenValues/eigenValues(1),'.')
 line([1,97],[1./condNum,1./condNum],'Color','red')
 xlabel('Eigenmodes')
@@ -263,6 +271,7 @@ dm.StopMonitoring();
 stop(vid);
 delete(vid); %closing the connection
 clear vid;
+clear src;
 
 End_Modulation(E727,Controller);
 clear E727
