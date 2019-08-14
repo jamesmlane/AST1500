@@ -1,7 +1,6 @@
 %% focus_dm_pokes.m
 % Author - James Lane
-% Try and live-view the PWFS while poking the DM to try and test focus
-% issues
+% Examine poke area of influence in real time.
 
 %% Set local paths
 addpath( genpath('../../../src/matlab/pwfs') )
@@ -14,38 +13,30 @@ acecsStartup();
 userStartup
 dm.Reset();
 
-%% Define the ALPAO loop
-
-% Switch on the monitoring windows
-wfs.StartRtd();
-wfs.StartSlopeRtd();
-wfs.StartAlignmentRtd();
-wfs.StartWavefrontRtd();
-wfs.sCam.dit = 0.06; % Set camera exposure time in ms
-
-% Initiate the loop
-loop.StartMonitoring();
-loop = aceloopLOOP();
-loop.set('sWfs', wfs);
-loop.set('sWfc', dm);
-loop.Online();
-
-%% Setup and monitor the DM
+% Monitor the DM
 dm.StopMonitoring();
 dm.StartMonitoring();
-load('./assets/flatDMCommands.m');
-dm.cmdVector(1:dm.nAct) = flatDMCommands;
 
-%% Setup the PWFS camera
+% Get current DM commands
+load('../assets/flatDMCommands.mat')
+% dm.cmdVector(1:dm.nAct)=curDMCommands;
+
+%% Setup the camera
 vid = videoinput('pointgrey', 1);
 get(vid)
-shutter = 0.01;
-flushdata(vid); % clears all frames from buffer
+shutter = 20; % Exposure time in ms
+flushdata(vid);% clears all frames from buffer
 src = getselectedsource(vid);
 vid.FramesPerTrigger = 1;
 vid.TriggerRepeat = inf;
-triggerconfig(vid,'manual');
-start(vid);
+src.ShutterMode = 'Manual';
+src.ExposureMode = 'Off';
+src.GainMode = 'Manual';
+src.Gain = 0;
+src.FrameRateMode = 'Manual';
+src.FrameRate = 30;
+src.Shutter = shutter;
+triggerconfig(vid,'hardware','fallingEdge','externalTriggerMode0-Source0');
 
 %% Initialize the tip-tilt stage
 frequency = 50.0; % Hz
@@ -53,17 +44,19 @@ amplitude = 50 / 0.7289; % In microns
 offset = 2500; % Offset in micro radians
 xscale = 0.7289; % Fractional amplitude correction in X
 phaseshift = 1.8837;
-[E727,Controller] = Start_Modulation(frequency, amplitude, xscale, phaseshift);
+[E727,Controller] = StartModulation(frequency, amplitude, xscale, phaseshift);
 
 %% Definitions
-pauseTime = 0.1;      % Time to pause between command and slope acquisition
+pauseTime = 0.5;      % Time to pause between command and slope acquisition
 nAverage = 5;         % Number of frames to average for each push-pull
 nbPushPull = 5;       % Number of push-pull
 pushPullValue = 0.12; % Magnitude of push-pull
 loopGain = 0.3;       % Loop gain
 
 % Get slopes to check numbers
-[slopeX,slopeY] = PWFSGetSlopes(vid);
+start(vid)
+[slopeX,slopeY] = PWFSGetSlopesModulation(vid);
+stop(vid)
 
 % Setup the interaction matrix array
 nSlopeX = size(slopeX,1);
@@ -92,10 +85,10 @@ for i=1:dm.nAct
     % Acquire slopes
     dm.cmdVector(i)=pushPullValue;
     pause(pauseTime)
-    [sPushX,sPushY] = PWFSGetSlopes(vid);
+    [sPushX,sPushY] = PWFSGetSlopesModulation(vid);
     dm.cmdVector(i)=-pushPullValue;
     pause(pauseTime)
-    [sPullX,sPullY] = PWFSGetSlopes(vid);
+    [sPullX,sPullY] = PWFSGetSlopesModulation(vid);
     dm.cmdVector(i)=curDMCommands(i);
 
     % Calculate the difference and append
@@ -193,51 +186,70 @@ poke_index = 40; % Which actuator to poke
 
 f5 = figure('Name','Monitoring DM Pokes');
 
-ax1 = subplot(3,3,1); % Show the initial X slope measurement
-ax2 = subplot(3,3,2); % Show the initial Y slope measurement
-ax3 = subplot(3,3,3); % Show the current X slope measurement
-ax4 = subplot(3,3,4); % Show the current Y slope measurement
-ax5 = subplot(3,3,5); % Show the difference in X
-ax6 = subplot(3,3,6); % Show the difference in Y
+ax1 = subplot(3,2,1); % Show the initial X slope measurement
+ax2 = subplot(3,2,2); % Show the initial Y slope measurement
+ax3 = subplot(3,2,3); % Show the current X slope measurement
+ax4 = subplot(3,2,4); % Show the current Y slope measurement
+ax5 = subplot(3,2,5); % Show the difference in X
+ax6 = subplot(3,2,6); % Show the difference in Y
 
 % Grab slope maps and populate the plots
 start(vid);
 dm.cmdVector(poke_index) = 0.5;
 pause(0.1);
-I1,I2,I3,I4,Sx_init,Sy_init = PWFSGetSlopeMapsModulation(vid);
-dm.cmdVector(poke_index) = curDMCommands(poke_index);
+[I1,I2,I3,I4,Sx_init,Sy_init] = PWFSGetSlopeMapsModulation(vid);
+dm.cmdVector(poke_index) = curVector(poke_index);
 stop(vid);
 
 subplot(ax1);
 imagesc(Sx_init);
+colorbar;
+caxis([-260,260]);
+title(ax1,'Initial Sx');
 
 subplot(ax2);
 imagesc(Sy_init);
+colorbar;
+caxis([-260,260]);
+title(ax2,'Initial Sy');
 
 % Loop over the number of iterations and update the image each time
-n_iteration = 1000;
+n_iteration = 100;
 start(vid);
 for i = 1:n_iteration
 
   % Poke the actuator and measure slopes
   dm.cmdVector(poke_index) = 0.5;
   pause(0.1);
-  I1,I2,I3,I4,Sx,Sy = PWFSGetSlopeMapsModulation(vid);
-  dm.cmdVector(poke_index) = curDMCommands(poke_index);
+  [I1,I2,I3,I4,Sx,Sy] = PWFSGetSlopeMapsModulation(vid);
+  dm.cmdVector(poke_index) = curVector(poke_index);
 
   subplot(ax3);
   imagesc(Sx);
+  colorbar;
+  caxis([-260,260]);
+  title(ax3,'Current Sx');
 
   subplot(ax4);
   imagesc(Sy);
+  colorbar;
+  caxis([-260,260]);
+  title(ax4,'Current Sy');
 
   subplot(ax5);
   imagesc(Sx-Sx_init);
+  colorbar;
+  caxis([-100,100]);
+  title(ax5,'Current-Initial Sx');
 
   subplot(ax6);
   imagesc(Sy-Sy_init);
+  colorbar;
+  caxis([-100,100]);
+  title(ax6,'Current-Initial Sy');
 
-  pause(1.0)
+  pause(0.5)
+  disp(i)
 
 end
 stop(vid);
@@ -255,7 +267,8 @@ dm.StopMonitoring();
 stop(vid);
 delete(vid); %closing the connection
 clear vid;
+clear src;
 
-End_Modulation(E727,Controller);
+EndModulation(E727,Controller);
 clear E727
 clear Controller
