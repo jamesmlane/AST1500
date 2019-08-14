@@ -4,6 +4,7 @@
 
 %% Set local paths
 addpath( genpath('../../src/matlab/pwfs') )
+addpath( genpath('../../src/matlab/utilities') )
 
 %% Start the video object
 vid = videoinput('pointgrey', 1);
@@ -29,10 +30,14 @@ imagesc(imageData)
 %% Define the location and size of the pupils
 nPupil = 4;
 pupilExtractGeometry = 'circular'; % Geometry to extract pupils
-pupilRadius = 73; % Pixels
-pupilCol = [265,900,267,901];
-pupilRow = [200,197,833,828];
+pupilRadius = 75; % Pixels
+pupilCol = [248,893,249,897];
+pupilRow = [200,191,840,833];
 pupilNames = ["Pupil 1","Pupil 2","Pupil 3","Pupil 4"];
+
+% save('./assets/pupilRadius.m','pupilRadius')
+% save('./assets/pupilCol.m','pupilCol')
+% save('./assets/pupilRow.m','pupilRow')
 
 %% Draw circles around the pupil locations
 f2 = figure('Name','Pyramid WFS Pupil Locations');
