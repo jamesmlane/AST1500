@@ -439,4 +439,17 @@ class PhotometricFilter:
         '''
         return [np.min(self.wavelength_data),np.max(self.wavelength_data)]
     #def
+    
+    def get_effective_wavelength(self):
+        '''get_effective_wavelength:
+        
+        Return the transmission-weighted center of the filter 
+        
+        Returns: effective_wavelength (float) Filter central wavelength
+        '''
+        mwlambda = np.divide(np.sum(
+                    np.multiply(self.wavelength_data,self.response_data)),
+                    np.sum(self.response_data))
+        return mwlambda
+    #def
 #cls
