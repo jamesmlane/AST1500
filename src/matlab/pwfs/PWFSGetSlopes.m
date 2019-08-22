@@ -1,12 +1,12 @@
 % PWFSGetSlopes.m
-% Get slopes for the Pyramid Wavefront Sensor
+% Get slopes
 
 function [SxVec,SyVec] = PWFSGetSlopes(vid)
 
     % Get frame
     [imageData,ts] = PWFSImageCapture(vid);
     imageData = double(imageData);
-
+    
     % Settings
     nPupil = 4;
     pupilExtractGeometry = 'circular'; % Geometry to extract pupils
@@ -14,7 +14,7 @@ function [SxVec,SyVec] = PWFSGetSlopes(vid)
     pupilCol = [265,900,267,901];
     pupilRow = [200,197,833,828];
     pupilNames = ["Pupil 1","Pupil 2","Pupil 3","Pupil 4"];
-
+    
     % Extract sub-images
     extractRadius = pupilRadius+5;
     I1 = imageData( pupilRow(1)-extractRadius:pupilRow(1)+extractRadius,...
@@ -25,7 +25,7 @@ function [SxVec,SyVec] = PWFSGetSlopes(vid)
                     pupilCol(3)-extractRadius:pupilCol(3)+extractRadius );
     I4 = imageData( pupilRow(4)-extractRadius:pupilRow(4)+extractRadius,...
                     pupilCol(4)-extractRadius:pupilCol(4)+extractRadius );
-
+                
     % Define the valid pixel map
     [xExtract,yExtract] = meshgrid(1:1+2*extractRadius,1:1+2*extractRadius);
     xExtract = xExtract - extractRadius;
@@ -51,7 +51,7 @@ function [SxVec,SyVec] = PWFSGetSlopes(vid)
                   I4(validPixelMap) )*ones(size(validPixelMap));
 
     % I think I've made sure to define this properly. See Figure 2.
-    % It's at least internally consistent, but I don't think it's consistent
+    % It's at least internally consistent, but I don't think it's consistent 
     % in an absolute sense with Verinaud or OOMAO geometry
     SyMap = ( (I1+I2) - (I3+I4) );
     SxMap = ( (I1+I3) - (I2+I4) );

@@ -5,15 +5,15 @@
 function [I1,I2,I3,I4,Sx,Sy] = PWFSGetSlopeMapsModulation(vid)
 
     % Get frame
-    [imageData,ts] = PWFSImageCapture_Modulation(vid);
+    [imageData,ts] = PWFSImageCaptureModulation(vid);
     imageData = double(imageData);
 
     % Settings
     nPupil = 4;
     pupilExtractGeometry = 'circular'; % Geometry to extract pupils
     pupilRadius = 75; % Pixels
-    pupilCol = [262,907,265,911];
-    pupilRow = [202,193,842,835];
+    pupilCol = [248,893,249,897];
+    pupilRow = [200,191,840,833];
     pupilNames = ["Pupil 1","Pupil 2","Pupil 3","Pupil 4"];
 
     % Extract sub-images
