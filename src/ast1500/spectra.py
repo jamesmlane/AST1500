@@ -4,11 +4,15 @@
 # AUTHOR - James Lane
 # PROJECT -
 # CONTENTS:
+# ESOSpectralLibrary
+# ESOSpectrum
+# PhotometricFilter
+# 
 #
 # ----------------------------------------------------------------------------
 
 ### Docstrings and metadata:
-'''
+'''Functions for handling spectra and photometric filters
 '''
 __author__ = "James Lane"
 
