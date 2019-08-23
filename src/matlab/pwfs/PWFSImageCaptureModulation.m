@@ -1,8 +1,8 @@
-function [images,timeStamp] = PWFSImageCapture_Modulation(vid)
+function [cleanframes,timeStamp] = PWFSImageCapture_Modulation(vid,background)
 
 flushdata(vid);
 
-pause(0.04)
+%pause(0.01)
 
 wait(vid,0.05,'logging')
 
@@ -19,7 +19,7 @@ wait(vid,0.05,'logging')
     
 [images, timeStamp] = getdata(vid,1);
 
-% cleanframes=images(:,:,1,1)-background;
+cleanframes=images(:,:,1,1)-background;
 
 
 end

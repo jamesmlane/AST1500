@@ -2,18 +2,18 @@
 % Extract sub-pupils and respective slopes and return arrays
 % for plotting.
 
-function [I1,I2,I3,I4,Sx,Sy] = PWFSGetSlopeMapsModulation(vid)
+function [I1,I2,I3,I4,Sx,Sy] = PWFSGetSlopeMapsModulation(vid,background)
 
     % Get frame
-    [imageData,ts] = PWFSImageCaptureModulation(vid);
+    [imageData,ts] = PWFSImageCaptureModulation(vid,background);
     imageData = double(imageData);
 
     % Settings
     nPupil = 4;
     pupilExtractGeometry = 'circular'; % Geometry to extract pupils
-    pupilRadius = 75; % Pixels
-    pupilCol = [248,893,249,897];
-    pupilRow = [200,191,840,833];
+    pupilRadius = 69; % Pixels
+    pupilCol = [460,1115,470,1128];
+    pupilRow = [223,210,870,852];
     pupilNames = ["Pupil 1","Pupil 2","Pupil 3","Pupil 4"];
 
     % Extract sub-images

@@ -265,7 +265,7 @@ E727.DRC(2,axis_one,2)% current position
 E727.DRC(3,axis_two,1)
 E727.DRC(4,axis_two,2)
 
-figure(1);
+
 
 
 %E727.STE(axisname,1)

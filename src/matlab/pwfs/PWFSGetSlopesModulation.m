@@ -1,18 +1,18 @@
 % PWFSGetSlopes.m
 % Get slopes for the Pyramid Wavefront Sensor
 
-function [SxVec,SyVec] = PWFSGetSlopesModulation(vid)
+function [SxVec,SyVec] = PWFSGetSlopesModulation(vid,background)
 
     % Get frame
-    [imageData,ts] = PWFSImageCaptureModulation(vid);
+    [imageData,ts] = PWFSImageCaptureModulation(vid,background);
     imageData = double(imageData);
 
     % Settings
     nPupil = 4;
     pupilExtractGeometry = 'circular'; % Geometry to extract pupils
-    pupilRadius = 75; % Pixels
-    pupilCol = [248,893,249,897];
-    pupilRow = [200,191,840,833];
+    pupilRadius = 69; % Pixels
+    pupilCol = [460,1115,470,1128];
+    pupilRow = [223,210,870,852];
     pupilNames = ["Pupil 1","Pupil 2","Pupil 3","Pupil 4"];
 
     % Extract sub-images
