@@ -2,7 +2,8 @@
 
 # Data directories, big files that are
 # easily generated
-/data/
+/data/eso_spectral_lib
+/data/irtf_spectral_lib
 
 # Scratch space
 /scratch/
