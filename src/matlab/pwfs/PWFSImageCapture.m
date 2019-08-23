@@ -1,21 +1,16 @@
 
 function [images,timeStamp] = PWFSImageCapture(vid)
 
-% Flush the buffer
 flushdata(vid);
-
-% Manually trigger the camera
 trigger(vid);
-
-% Wait for it to get an image
+    
 while islogging(vid) == 1
+    % disp('Capturing images...')
     pause(0.01)
 end
-
-% Read the data
+    
 [images, timeStamp] = getdata(vid,vid.FramesAvailable);
 
-end
 
  %connecting
 
@@ -30,7 +25,7 @@ end
 
 
 %src.FrameRateMode = 'Manual';
-%src.GainMode = 'Manual';
+%src.GainMode = 'Manual'; 
 %src.ShutterMode = 'Manual';
 %src.ExposureMode = 'Off';
 %src.SharpnessMode = 'Off';
@@ -76,9 +71,9 @@ end
 
 % if isrunning(vid) == 1 %confirming that the video feed is runnning
 %     disp('Video feed enabled.')
-% else
+% else 
 %     disp('No video feed active.')
-%
+%     
 % end
 
  %begin image acquisition
@@ -92,13 +87,13 @@ end
 % pausing for image capture
 
 
-% if vid.FramesAcquired == 0 %checking that trigger was successful
+% if vid.FramesAcquired == 0 %checking that trigger was successful 
 %     disp('Trigger failure: 0 frames acquired.')
-% else
+% else 
 %     disp([int2str(vid.FramesAcquired),'','frames acquired.'])
 % end
 
-
+ 
  %stop video feed
 
 %images(:,:,:,i)=getdata(vid,vid.FramesAvailable);
@@ -107,14 +102,14 @@ end
 
 % [images, timeStamp] = getdata(vid,vid.FramesAvailable); %Move frames from buffer into MATLAB
 
-%waittime = src.FrameRate * (vid.FramesPerTrigger + vid.TriggerFrameDelay) + 0;
+%waittime = src.FrameRate * (vid.FramesPerTrigger + vid.TriggerFrameDelay) + 0; 
 %wait(vid, waittime); %including wait time for buffering
 
 %savedframes=vid.FramesAvailable;
 %vid.DiskLoggerFrameCount;
 
 
-% disp([int2str( vid.DiskLoggerFrameCount),' ','frames saved to memory.']) %checking number of saved images
+% disp([int2str( vid.DiskLoggerFrameCount),' ','frames saved to memory.']) %checking number of saved images 
 
 
 
@@ -128,9 +123,18 @@ end
 %[Xvals,Yvals]=Centroid2d(frames(:,:,:,1),350,7);
 
 %Centroidmap=ones(1200,1920,'uint16');
-
+  
 %Centroidmap(Xvals,Yvals)=0;
 
 
 %figure;
 %imagesc((Centroidmap.*frames(:,:,:,1)));
+ 
+
+
+
+
+end
+
+
+

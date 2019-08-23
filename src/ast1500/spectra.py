@@ -4,11 +4,15 @@
 # AUTHOR - James Lane
 # PROJECT -
 # CONTENTS:
+# ESOSpectralLibrary
+# ESOSpectrum
+# PhotometricFilter
+# 
 #
 # ----------------------------------------------------------------------------
 
 ### Docstrings and metadata:
-'''
+'''Functions for handling spectra and photometric filters
 '''
 __author__ = "James Lane"
 
@@ -279,8 +283,8 @@ class PhotometricFilter:
 
     Class to hold information about photometric filters. Currently supports:
 
-    Bessell: U,B,V,R,I
-    2MASS: J,H,Ks
+    Bessell: U,B,V,R,I (http://svo2.cab.inta-csic.es/theory/fps/index.php?mode=browse&gname=Generic)
+    2MASS: J,H,Ks (http://svo2.cab.inta-csic.es/theory/fps/index.php?mode=browse&gname=2MASS)
     Pickles: V,Ic,K (https://ui.adsabs.harvard.edu/abs/1998PASP..110..863P/abstract)
     
     Can call just based on the name as long as there is no degenerate overlap. 
@@ -438,5 +442,18 @@ class PhotometricFilter:
             maximum in nm
         '''
         return [np.min(self.wavelength_data),np.max(self.wavelength_data)]
+    #def
+    
+    def get_effective_wavelength(self):
+        '''get_effective_wavelength:
+        
+        Return the transmission-weighted center of the filter 
+        
+        Returns: effective_wavelength (float) Filter central wavelength
+        '''
+        mwlambda = np.divide(np.sum(
+                    np.multiply(self.wavelength_data,self.response_data)),
+                    np.sum(self.response_data))
+        return mwlambda
     #def
 #cls

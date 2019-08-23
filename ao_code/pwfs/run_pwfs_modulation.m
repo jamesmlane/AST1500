@@ -5,6 +5,24 @@
 %% Set local paths
 addpath( genpath('../../src/matlab/pwfs') )
 
+%% Setup the camera
+imaqreset
+vid = videoinput('pointgrey', 1); 
+get(vid)
+shutter = 10; % Exposure time in ms
+flushdata(vid);% clears all frames from buffer
+src = getselectedsource(vid);
+vid.FramesPerTrigger = 1;
+vid.TriggerRepeat = inf;
+src.ShutterMode = 'Manual';
+src.ExposureMode = 'Off';
+src.GainMode = 'Manual';
+src.Gain = 0;
+src.FrameRateMode = 'Manual';
+src.FrameRate = 30;
+src.Shutter = shutter;
+triggerconfig(vid,'hardware','fallingEdge','externalTriggerMode0-Source0');
+
 %% Initiating ALPAO
 % getenv('ACEROOT')
 setenv( 'ACEROOT', 'C:\Users\Admin\Documents\Alpao\AlpaoCoreEngine')
@@ -13,7 +31,13 @@ acecsStartup();
 userStartup
 dm.Reset();
 
-%% Define the ALPAO loop
+% Monitor the DM
+dm.StopMonitoring();
+dm.StartMonitoring();
+
+% Get current DM commands
+load('./assets/flatDMCommands.mat')
+% dm.cmdVector(1:dm.nAct)=curDMCommands;
 
 % Switch on the monitoring windows
 wfs.StartRtd();
@@ -29,46 +53,58 @@ loop.set('sWfs', wfs);
 loop.set('sWfc', dm);
 loop.Online();
 
-%% Setup and monitor the DM
-dm.StopMonitoring();
-dm.StartMonitoring();
-load('./assets/flatDMCommands.m');
-dm.cmdVector(1:dm.nAct) = flatDMCommands;
-
-%% Setup the PWFS camera
-vid = videoinput('pointgrey', 1);
-get(vid)
-shutter = 0.01;
-flushdata(vid); % clears all frames from buffer
-src = getselectedsource(vid);
-vid.FramesPerTrigger = 1;
-vid.TriggerRepeat = inf;
-triggerconfig(vid,'manual');
-start(vid);
-
 %% Initialize the tip-tilt stage
-frequency = 50.0; % Hz
-amplitude = 50 / 0.7289; % In microns
+frequency = 100.0; % Hz
+xscale = 0.795; % Fractional amplitude correction in X
+phaseshift = 1;
+amplitude = 450 / xscale; % In microns
 offset = 2500; % Offset in micro radians
-xscale = 0.7289; % Fractional amplitude correction in X
-phaseshift = 1.8837;
-[E727,Controller] = Start_Modulation(frequency, amplitude, xscale, phaseshift);
+
+[E727,Controller] = StartModulation(frequency, amplitude, xscale, phaseshift);
+
+%% Take background images
+start(vid)
+pause(0.1)
+background = TakeBackgroundImage(vid);
+stop(vid)
 
 %% Definitions
 pauseTime = 0.1;      % Time to pause between command and slope acquisition
 nAverage = 5;         % Number of frames to average for each push-pull
 nbPushPull = 5;       % Number of push-pull
 pushPullValue = 0.12; % Magnitude of push-pull
-loopGain = 0.3;       % Loop gain
+loopGain = 0.1;       % Loop gain
 
 % Get slopes to check numbers
-[slopeX,slopeY] = PWFSGetSlopes(vid);
+start(vid)
+[slopeX,slopeY] = PWFSGetSlopesModulation(vid,background);
+stop(vid)
 
 % Setup the interaction matrix array
 nSlopeX = size(slopeX,1);
 nSlopeY = size(slopeY,1);
 nSlopes = nSlopeX + nSlopeY;
 interactionMatrix = zeros( dm.nAct, nSlopeX+nSlopeY );
+
+%% Make sure things are not saturated
+
+% Record the current DM commands
+curDMCommands = dm.cmdVector;
+maxPixel = 0;
+start(vid)
+tempBackground=zeros(1024,1280,'uint8'); % Don't background subtract
+for i=1:dm.nAct
+    dm.cmdVector(i)=0.3;
+    pause(0.1);
+    [imageData,ts] = PWFSImageCaptureModulation(vid,tempBackground);
+    curMaxPixel = max(max(imageData));
+    if curMaxPixel > maxPixel
+        maxPixel=curMaxPixel;
+    end
+    dm.cmdVector(1:dm.nAct)=curDMCommands;
+end
+disp(maxPixel)
+stop(vid)
 
 %% Create the interaction matrix
 wbfig = waitbar(0,'Creating interaction matrix...');
@@ -91,10 +127,10 @@ for i=1:dm.nAct
     % Acquire slopes
     dm.cmdVector(i)=pushPullValue;
     pause(pauseTime)
-    [sPushX,sPushY] = PWFSGetSlopes(vid);
+    [sPushX,sPushY] = PWFSGetSlopesModulation(vid,background);
     dm.cmdVector(i)=-pushPullValue;
     pause(pauseTime)
-    [sPullX,sPullY] = PWFSGetSlopes(vid);
+    [sPullX,sPullY] = PWFSGetSlopesModulation(vid,background);
     dm.cmdVector(i)=curDMCommands(i);
 
     % Calculate the difference and append
@@ -133,11 +169,11 @@ iS = diag(1./eigenValues);
 
 % Decide on the number of eigenvalues to threshold
 condVec = eigenValues(1)./eigenValues;
-condNum = 5; % Max Eigenvalue / Eigenvalue threshold
+condNum = 5.5; % Max Eigenvalue / Eigenvalue threshold
 index = condVec > condNum;
 
 % Plot the eigenvalues and the chosen conditioning parameter
-f2 = figure('Name','Eigenvalues')
+f2 = figure('Name','Eigenvalues');
 semilogy(eigenValues/eigenValues(1),'.')
 line([1,97],[1./condNum,1./condNum],'Color','red')
 xlabel('Eigenmodes')
@@ -145,7 +181,7 @@ ylabel('Normalized Eigenvalues')
 
 % Threshold the eigenvalues
 nThresholded = sum(index);
-%nThresholded = 67;
+% nThresholded = 47;
 fprintf('%i / 97 modes removed\n',nThresholded)
 
 % Remake the inverse eigenvalue matrix with thresholding
@@ -173,11 +209,11 @@ figure();
 
 % Manual loop block
 curVector = dm.cmdVector;
-[sX,sY] = PWFSGetSlopesModulation(vid);
+[sX,sY] = PWFSGetSlopesModulation(vid,background);
 sVec = [sX;sY];
 commandVec = curVector - loopGain*commandMatrix'*sVec;
 dm.cmdVector(dmIndex) = commandVec;
-[imageData,ts] = PWFSImageCaptureModulation(vid);
+[imageData,ts] = PWFSImageCaptureModulation(vid,background);
 imageData = double(imageData);
 imagesc(imageData)
 
@@ -193,28 +229,33 @@ stop(vid)
 %% Create the loop
 dmIndex = 1:dm.nAct;
 start(vid);
+pause(1);
 figure();
 
-nsteps = 5000;
+nsteps = 100;
 for i=1:nsteps
 
     curVector = dm.cmdVector;
 
     % Get slopes
-    [sX,sY] = PWFSGetSlopesModulation(vid);
-
+    [sX,sY] = PWFSGetSlopesModulation(vid,background);
+    sVec = [sX;sY];
     commandVec = curVector - loopGain*commandMatrix'*sVec;
 
     dm.cmdVector(dmIndex) = commandVec;
 
-    pause(0.01)
+    pause(0.05)
 
-    [imageData,ts] = PWFSImageCaptureModulation(vid);
+    [imageData,ts] = PWFSImageCaptureModulation(vid,background);
     imageData = double(imageData);
     imagesc(imageData)
 
     disp(i)
 end
+
+dm.Reset();
+dm.cmdVector(1:dm.nAct) = curDMCommands;
+stop(vid)
 
 %% How similar are the commands that would be applied?
 
@@ -263,7 +304,8 @@ dm.StopMonitoring();
 stop(vid);
 delete(vid); %closing the connection
 clear vid;
+clear src;
 
-End_Modulation(E727,Controller);
+EndModulation(E727,Controller);
 clear E727
 clear Controller
