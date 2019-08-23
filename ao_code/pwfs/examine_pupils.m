@@ -9,13 +9,31 @@ addpath( genpath('../../src/matlab/utilities') )
 %% Start the video object
 vid = videoinput('pointgrey', 1);
 get(vid)
-shutter = 0.01;
+shutter = 2;
 flushdata(vid);% clears all frames from buffer
 src = getselectedsource(vid);
+src.Shutter=shutter;
+src.Gain=0;
 vid.FramesPerTrigger = 1;
 vid.TriggerRepeat = inf;
 triggerconfig(vid,'manual');
 start(vid);
+
+%% Initiating ALPAO to flatten DM
+% getenv('ACEROOT')
+setenv( 'ACEROOT', 'C:\Users\Admin\Documents\Alpao\AlpaoCoreEngine')
+addpath( fullfile(getenv('ACEROOT'), 'matlab') );
+acecsStartup();
+userStartup
+dm.Reset();
+
+% Monitor the DM
+dm.StopMonitoring();
+dm.StartMonitoring();
+
+% Get current DM commands
+load('./assets/flatDMCommands.mat')
+% dm.cmdVector(1:dm.nAct)=curDMCommands;
 
 %% Get the image
 flushdata(vid);
@@ -30,9 +48,9 @@ imagesc(imageData)
 %% Define the location and size of the pupils
 nPupil = 4;
 pupilExtractGeometry = 'circular'; % Geometry to extract pupils
-pupilRadius = 75; % Pixels
-pupilCol = [248,893,249,897];
-pupilRow = [200,191,840,833];
+pupilRadius = 71; % Pixels
+pupilCol = [460,1115,470,1128];
+pupilRow = [223,210,870,852];
 pupilNames = ["Pupil 1","Pupil 2","Pupil 3","Pupil 4"];
 
 % save('./assets/pupilRadius.m','pupilRadius')
@@ -71,6 +89,7 @@ hold on
 draw_circle(extractRadius,extractRadius,pupilRadius,pupilNames(1))
 hold off
 title(pupilNames(1))
+axis('image')
 
 subplot(2,2,2)
 imagesc( I2 )
@@ -78,6 +97,7 @@ hold on
 draw_circle(extractRadius,extractRadius,pupilRadius,pupilNames(2))
 hold off
 title(pupilNames(2))
+axis('image')
 
 subplot(2,2,3)
 imagesc( I3 )
@@ -85,6 +105,7 @@ hold on
 draw_circle(extractRadius,extractRadius,pupilRadius,pupilNames(3))
 hold off
 title(pupilNames(3))
+axis('image')
 
 subplot(2,2,4)
 imagesc( I4 )
@@ -92,6 +113,7 @@ hold on
 draw_circle(extractRadius,extractRadius,pupilRadius,pupilNames(4))
 hold off
 title(pupilNames(4))
+axis('image')
 
 %% Slope Calculations
 
