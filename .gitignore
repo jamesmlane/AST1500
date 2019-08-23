@@ -4,6 +4,10 @@
 # easily generated
 /data/eso_spectral_lib
 /data/irtf_spectral_lib
+/data/spectra
+/data/movies
+/data/pwfs_focus
+
 
 # Scratch space
 /scratch/
