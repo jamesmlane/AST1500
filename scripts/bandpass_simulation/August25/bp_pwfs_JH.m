@@ -40,9 +40,9 @@ nInst = 2;
 %% Start the loop
 
 for i = 1:length(magnitudeVector)
-    
+
     for j = 1:length(modulationVector)
-    
+
         % Clear everything important
         clear atm bif dm ngs ngsTmp science tel wfs zern
         close all
@@ -384,7 +384,7 @@ for i = 1:length(magnitudeVector)
             strehlVecMaster(1,L) = Strehl_marechal;
 
         end
-        outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',num2str(modulation),'mod',ngsBandName,'band','_scaledmodulation2');
+        outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',num2str(modulation),'mod_',ngsBandName,'band');
         save(outputStr,'strehlVecMaster')
     end
 end
