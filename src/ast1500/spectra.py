@@ -127,7 +127,7 @@ class ESOSpectralLibrary:
         return fname
     #def
 
-    def read_spectra(self,name,return_data=False,normalized=False):
+    def read_spectra(self,name,return_data=False,flambda=False):
         '''read_spectra:
 
         Read a spectrum given an index number or the name of a spectrum. Return
@@ -138,7 +138,7 @@ class ESOSpectralLibrary:
             spectra_wavelength, spectra_data = np.genfromtxt(fname,usecols=(0,1)).T
             return spectra_wavelength, spectra_data
         else:
-            spec = ESOSpectrum(filename=fname,normalized=normalized)
+            spec = ESOSpectrum(filename=fname,flambda=flambda)
             return spec
         ##ie
     #def
@@ -159,7 +159,7 @@ class ESOSpectralLibrary:
 
         Find the wavelength range of the current spectra
         '''
-
+    #def
 #cls
 
 # ----------------------------------------------------------------------------
@@ -184,17 +184,17 @@ class ESOSpectrum:
                  filename=None,
                  data=None,
                  wavelength=None,
-                 normalized=False
+                 flambda=False
                  ):
                  
         # Two options to initialize: filename or data and wavelength
-        self.normalized=normalized
+        self.flambda=flambda
         if filename == None:
             assert data != None and wavelength != None,\
                 'If filename is not supplied then data and wavelength must be'
             self.filename = filename
             self.wavelength = wavelength
-            if self.normalized:
+            if self.flambda:
                 self.data = data
             else:
                 self._data_raw = data
@@ -203,13 +203,13 @@ class ESOSpectrum:
             self.filename = filename
             read_wavelength,read_data_raw = np.genfromtxt(filename,usecols=(0,1)).T
             self.wavelength = read_wavelength
-            if self.normalized:
+            if self.flambda:
                 self.data = read_data_raw
             else:
                 self._data_raw = read_data_raw
             ##ie
         ##fi  
-        if self.normalized == False:
+        if self.flambda == False:
             print('Warning: spectra is not normalized')  
     ##fi
     
@@ -227,7 +227,7 @@ class ESOSpectrum:
             
             photometric_filter = PhotometricFilter(**photometric_filter_kws)
         
-        if self.normalized:
+        if self.flambda:
             response = photometric_filter.response(self.wavelength/10.)
             mag = -2.5*np.log10( self._convolve_filter_flux(response) )
         else:
@@ -335,7 +335,7 @@ class PhotometricFilter:
             ##fi
             
             # Check to make sure the class and name make sense
-            if filter_class not in ['Bessell','2MASS','Pickles']:
+            if filter_class not in ['Bessell','2MASS','Pickles','MMIRS','MMTCam']:
                 raise ValueError('{} filter class not supported'.format(filter_class))
             ##fi
             if filter_class == 'Bessell':
@@ -351,6 +351,18 @@ class PhotometricFilter:
             if filter_class == 'Pickles':
                 if filter_name not in ['V','Ic','K']:
                     raise ValueError('{} not a Pickles filter'.format(filter_name))
+                ##fi
+            ##fi            
+            if filter_class == 'MMTCam':
+                filter_class = 'MMT.'+filter_class
+                if filter_name not in ['i','z']:
+                    raise ValueError('{} not a MMTCam filter'.format(filter_name))
+                ##fi
+            ##fi
+            if filter_class == 'MMIRS':
+                filter_class = 'MMT.'+filter_class
+                if filter_name not in ['Y','J','H','Ks']:
+                    raise ValueError('{} not a MMIRS filter'.format(filter_name))
                 ##fi
             ##fi
 
@@ -404,14 +416,15 @@ class PhotometricFilter:
         '''
         # Check if in wavelength range and output response
         wvln_min,wvln_max = self.get_wavelength_range()
-        response = np.zeros_like(wavelength)
+        response = np.zeros_like(wavelength,dtype='float')
         where_in_filter_range = np.where( (wavelength > wvln_min) &
                                           (wavelength < wvln_max) )[0]
         response[where_in_filter_range] = self._spline_(wavelength[where_in_filter_range])
+        # pdb.set_trace()
         return response
     #def
     
-    def plot_response(self,wavlength,fig=None,ax=None,plot_kws={}):
+    def plot_response(self,wavelength=None,fig=None,ax=None,plot_kws={}):
         '''plot_response:
         
         Plot the response of a filter over a range of wavelengths
@@ -424,6 +437,11 @@ class PhotometricFilter:
         if fig==None or ax==None:
             fig = plt.figure()
             ax = fig.add_subplot(111)
+        ##fi
+        
+        if wavelength is None:
+            wvln_min,wvln_max = self.get_wavelength_range()
+            wavelength = np.arange(wvln_min,wvln_max,1.0)
         ##fi
         
         response = self.response(wavelength)
