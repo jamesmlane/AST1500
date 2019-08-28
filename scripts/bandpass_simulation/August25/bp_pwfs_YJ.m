@@ -388,3 +388,4 @@ for i = 1:length(magnitudeVector)
         save(outputStr,'strehlVecMaster')
     end
 end
+disp('All done')
