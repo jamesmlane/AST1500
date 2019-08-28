@@ -27,20 +27,8 @@ from matplotlib import pyplot as plt
 # from matplotlib import colors
 # from matplotlib import cm
 
-## Astropy
-# from astropy.io import fits
-# from astropy.coordinates import SkyCoord
-# from astropy import table
-# from astropy import units as apu
-
-## galpy
-# from galpy import orbit
-# from galpy import potential
-# from galpy import actionAngle as aA
-# from galpy import df
-# from galpy.util import bovy_coords as gpcoords
-# from galpy.util import bovy_conversion as gpconv
-# from galpy.util import bovy_plot as gpplot
+## scipy
+import scipy.io as sio
 
 # ----------------------------------------------------------------------------
 
