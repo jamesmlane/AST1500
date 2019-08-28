@@ -21,8 +21,9 @@ outputPath = 'output/';
 load ../../../data/MMT_DM336_Actuators.mat
 
 % Choice of NGS magnitudes for simulations
-magnitudeVector = 6:2:14;
+magnitudeVector = 10:2:14;
 modulationVector = 1:2:5;
+loopGain = 0.4; % Pyramid goes 0.3 to 0.5
 
 % Choice of NGS bandpass
 ngsBandName = 'HKs';
@@ -74,7 +75,6 @@ for i = 1:length(magnitudeVector)
                                     'obstructionRatio',0.10,...
                                     'minLightRatio',0.05);
         %wfs.binning = 2;
-        loopGain = 0.5; % Closed loop gain, higher for pyramid
 
         % Telescope parameters
         dmType = 'ASM';
@@ -384,7 +384,7 @@ for i = 1:length(magnitudeVector)
             strehlVecMaster(1,L) = Strehl_marechal;
 
         end
-        outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',num2str(modulation),'mod_',ngsBandName,'band');
+        outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',num2str(modulation),'mod_',num2str(loopGain),'gain_',ngsBandName,'band');
         save(outputStr,'strehlVecMaster')
     end
 end
