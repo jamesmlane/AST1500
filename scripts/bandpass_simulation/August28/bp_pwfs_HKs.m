@@ -24,6 +24,7 @@ load ../../../data/MMT_DM336_Actuators.mat
 magnitudeVector = 10:2:14;
 modulationVector = 1:2:5;
 loopGain = 0.4; % Pyramid goes 0.3 to 0.5
+loopGainStr = '04';
 
 % Choice of NGS bandpass
 ngsBandName = 'HKs';
@@ -384,7 +385,7 @@ for i = 1:length(magnitudeVector)
             strehlVecMaster(1,L) = Strehl_marechal;
 
         end
-        outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',num2str(modulation),'mod_',num2str(loopGain),'gain_',ngsBandName,'band');
+        outputStr = strcat(outputPath,num2str(wfsType),'_',num2str(magTmp),'mag_',num2str(modulation),'mod_',loopGainStr,'gain_',ngsBandName,'band');
         save(outputStr,'strehlVecMaster')
     end
 end
